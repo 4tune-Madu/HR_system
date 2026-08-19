@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Employees</title>
+
+</head>
+
+<body>
+
+    <h1>Employees</h1>
+
+    <p>
+        Organization: {{ organization_id }}
+    </p>
+
+    <table>
+
+        <thead>
+
+            <tr>
+                <th>Employee Number</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Status</th>
+            </tr>
+
+        </thead>
+
+        <tbody>
+
+            {% for employee in employees %}
+
+                <tr>
+
+                    <td>
+                        {{ employee.employee_number }}
+                    </td>
+
+                    <td>
+                        {{ employee.identity.first_name }}
+                        {{ employee.identity.last_name }}
+                    </td>
+
+                    <td>
+                        {{ employee.contact.company_email }}
+                    </td>
+
+                    <td>
+                        {% if employee.is_active %}
+                            Active
+                        {% else %}
+                            Inactive
+                        {% endif %}
+                    </td>
+
+                </tr>
+
+            {% empty %}
+
+                <tr>
+
+                    <td colspan="4">
+                        No employees found.
+                    </td>
+
+                </tr>
+
+            {% endfor %}
+
+        </tbody>
+
+    </table>
+
+</body>
+
+</html>

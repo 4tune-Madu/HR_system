@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Login | HR+</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --ink: #0b0b0e;
+  --ink-soft: #4a4a55;
+  --surface: #ffffff;
+  --muted: #96969f;
+  --border: #eaeaef;
+
+  --violet: #7c6ef2;
+  --lilac: #cabcfb;
+  --danger: #d64545;
+
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-pill: 999px;
+
+  --font-ui: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --fs-xs: 0.75rem;
+  --fs-sm: 0.875rem;
+  --fs-md: 1rem;
+  --fs-lg: 1.25rem;
+  --fs-xl: clamp(1.5rem, 5vw, 2rem);
+  --fs-2xl: clamp(1.9rem, 4vw + 1rem, 2.75rem);
+
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: clamp(24px, 5vw, 48px);
+
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-l: env(safe-area-inset-left, 0px);
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+html, body { margin: 0; padding: 0; min-height: 100%; }
+
+body {
+  font-family: var(--font-ui);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  min-height: 100dvh;
+  width: 100%;
+  position: relative;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+
+  background:
+    radial-gradient(760px 520px at 88% -10%, rgba(124, 110, 242, 0.14), transparent 62%),
+    radial-gradient(640px 480px at 4% 105%, rgba(124, 110, 242, 0.10), transparent 62%),
+    linear-gradient(180deg, #fdfdff 0%, #fbfaff 50%, #f8f7fc 100%);
+}
+
+button, input { font-family: inherit; }
+a { color: inherit; text-decoration: none; }
+
+button:focus-visible, a:focus-visible, input:focus-visible {
+  outline: 2px solid var(--violet);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* ---------- Top bar ---------- */
+.topbar {
+  display: flex;
+  justify-content: flex-end;
+  padding: calc(var(--space-6) + var(--safe-t)) calc(var(--space-7) + var(--safe-r)) var(--space-6) var(--space-6);
+  position: relative;
+  z-index: 2;
+}
+
+.util-group {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid var(--border);
+  border-radius: var(--r-pill);
+  padding: 4px;
+  backdrop-filter: blur(6px);
+}
+
+.icon-btn {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.icon-btn:hover { background: var(--surface); color: var(--ink); }
+.icon-btn svg { opacity: 0.7; }
+.icon-btn:hover svg { opacity: 0.95; }
+
+.util-divider {
+  width: 1px;
+  height: 16px;
+  background: var(--border);
+  margin: 0 2px;
+}
+
+/* ---------- Hero / auth ---------- */
+.hero {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6) calc(var(--space-6) + var(--safe-r)) calc(var(--space-6) + var(--safe-b)) calc(var(--space-6) + var(--safe-l));
+}
+
+.hero-inner {
+  text-align: center;
+  width: 100%;
+  max-width: 380px;
+  animation: rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.eyebrow {
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  margin: 0 0 var(--space-4);
+}
+
+h1 {
+  font-size: var(--fs-2xl);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  margin: 0 0 var(--space-6);
+  color: var(--ink);
+}
+h1 em {
+  font-style: normal;
+  color: var(--violet);
+}
+
+/* ---------- Messages / errors ---------- */
+.messages { margin: 0 0 var(--space-4); }
+.message {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  margin: 0 0 var(--space-2);
+}
+.form-error {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--danger);
+  background: rgba(214, 69, 69, 0.08);
+  border-radius: var(--r-sm);
+  padding: 10px 14px;
+  margin: 0 0 var(--space-5);
+}
+
+/* ---------- Form ---------- */
+.auth-form { text-align: left; }
+
+.field { margin-bottom: var(--space-4); }
+.field label {
+  display: block;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 6px;
+}
+
+/* Targets Django's raw rendered <input> from {{ form.username }} / {{ form.password }} */
+.field input {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 12px 14px;
+  font-size: var(--fs-sm);
+  font-family: inherit;
+  color: var(--ink);
+  background: var(--surface);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.field input:focus {
+  outline: none;
+  border-color: var(--violet);
+  box-shadow: 0 0 0 3px rgba(124, 110, 242, 0.14);
+}
+
+.btn-login {
+  display: inline-flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 24px;
+  border-radius: var(--r-pill);
+  border: none;
+  background: var(--ink);
+  color: var(--surface);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  margin-top: var(--space-3);
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s ease, opacity 0.15s ease;
+  box-shadow: 0 10px 26px rgba(11, 11, 14, 0.16);
+}
+.btn-login:hover { transform: translateY(-2px); box-shadow: 0 16px 34px rgba(11, 11, 14, 0.2); }
+.btn-login:active { transform: translateY(0); box-shadow: 0 8px 18px rgba(11, 11, 14, 0.16); }
+
+.divider {
+  width: 32px;
+  height: 1px;
+  background: var(--border);
+  margin: var(--space-6) auto var(--space-4);
+}
+
+.helper-text {
+  font-size: var(--fs-xs);
+  font-weight: 400;
+  color: var(--muted);
+  letter-spacing: 0.01em;
+  text-align: center;
+}
+
+@media (max-width: 480px) {
+  .topbar { padding: calc(var(--space-5) + var(--safe-t)) calc(var(--space-4) + var(--safe-r)) var(--space-4) calc(var(--space-4) + var(--safe-l)); }
+  .hero { padding: var(--space-4) calc(var(--space-4) + var(--safe-r)) calc(var(--space-5) + var(--safe-b)) calc(var(--space-4) + var(--safe-l)); }
+}
+
+@media (max-width: 360px) {
+  .hero-inner { max-width: 100%; }
+  .btn-login { padding: 13px 20px; }
+}
+
+@media (min-width: 1600px) {
+  .hero-inner { max-width: 420px; }
+}
+</style>
+</head>
+
+<body>
+
+  <header class="topbar">
+    <div class="util-group">
+      <a class="icon-btn" href="/" aria-label="Back to home">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+          <path d="M19 12H5M11 6l-6 6 6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </a>
+      <div class="util-divider"></div>
+      <button class="icon-btn" aria-label="Help">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="9.25" stroke="currentColor" stroke-width="1.6"/>
+          <path d="M9.6 9.3a2.4 2.4 0 1 1 3.6 2.08c-.75.43-1.2.86-1.2 1.72" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          <circle cx="12" cy="16.3" r="0.9" fill="currentColor"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="hero">
+    <div class="hero-inner">
+      <p class="eyebrow">BT Human Resource Management</p>
+      <h1>Log in to <em>HR+</em></h1>
+
+      {% if messages %}
+        <div class="messages">
+          {% for message in messages %}
+            <p class="message">{{ message }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      {% if form.errors %}
+        <p class="form-error">Invalid email or password.</p>
+      {% endif %}
+
+      <form method="POST" class="auth-form">
+
+        {% csrf_token %}
+
+        <div class="field">
+          <label for="id_username">Email</label>
+          {{ form.username }}
+        </div>
+
+        <div class="field">
+          <label for="id_password">Password</label>
+          {{ form.password }}
+        </div>
+
+        <button type="submit" class="btn-login">
+          Log in
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+
+      </form>
+
+      <div class="divider"></div>
+      <p class="helper-text">Need access? Contact your workspace administrator.</p>
+    </div>
+  </main>
+
+</body>
+</html>

@@ -1,0 +1,1083 @@
+openapi: 3.0.3
+info:
+  title: HR Management System API
+  version: 1.0.0
+  description: API documentation for the HR Management System
+paths:
+  /api/auth/login/:
+    post:
+      operationId: auth_login_create
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Login'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Login'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Login'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Login'
+          description: ''
+  /api/auth/logout/:
+    post:
+      operationId: auth_logout_create
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogoutRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LogoutRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LogoutRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: Successfully logged out.
+        '400':
+          description: Invalid or missing refresh token.
+  /api/auth/me/:
+    get:
+      operationId: auth_me_retrieve
+      tags:
+      - Authentication
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Me'
+          description: ''
+  /api/auth/refresh/:
+    post:
+      operationId: auth_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/employees/organizations/{organization_id}/employees/:
+    get:
+      operationId: employee_list
+      description: Return all employees belonging to the specified organization.
+      summary: List employees
+      parameters:
+      - in: path
+        name: organization_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Employees
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Employee'
+          description: ''
+    post:
+      operationId: employee_create
+      description: Create a new employee and their related employee records.
+      summary: Create employee
+      parameters:
+      - in: path
+        name: organization_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Employees
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmployeeCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EmployeeCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EmployeeCreate'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Employee'
+          description: ''
+  /api/employees/organizations/{organization_id}/employees/{employee_id}/:
+    get:
+      operationId: employee_detail
+      description: Retrieve a single employee within an organization.
+      summary: Get employee
+      parameters:
+      - in: path
+        name: employee_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: organization_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Employees
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Employee'
+          description: ''
+    post:
+      operationId: employee_deactivate
+      description: Deactivate an employee. The employee is not deleted and can no
+        longer be treated as active.
+      summary: Deactivate employee
+      parameters:
+      - in: path
+        name: employee_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: organization_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Employees
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Employee'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Employee'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Employee'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Employee'
+          description: ''
+    patch:
+      operationId: employee_update
+      description: Update an employee and their related employee information.
+      summary: Update employee
+      parameters:
+      - in: path
+        name: employee_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: organization_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Employees
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedEmployeeCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedEmployeeCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedEmployeeCreate'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Employee'
+          description: ''
+  /api/employees/organizations/{organization_id}/employees/{employee_id}/documents/:
+    get:
+      operationId: employee_document_list
+      description: Return all active documents belonging to the specified employee.
+      summary: List employee documents
+      parameters:
+      - in: path
+        name: employee_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: organization_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Employee Documents
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EmployeeDocument'
+          description: ''
+    post:
+      operationId: employee_document_upload
+      description: Upload a document and associate it with the specified employee.
+      summary: Upload employee document
+      parameters:
+      - in: path
+        name: employee_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: organization_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Employee Documents
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EmployeeDocument'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EmployeeDocument'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmployeeDocument'
+          description: ''
+  /api/employees/organizations/{organization_id}/employees/{employee_id}/documents/{document_id}/:
+    get:
+      operationId: employee_document_detail
+      description: Retrieve a single active document belonging to an employee.
+      summary: Get employee document
+      parameters:
+      - in: path
+        name: document_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: employee_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: organization_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Employee Documents
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmployeeDocument'
+          description: ''
+    delete:
+      operationId: employee_document_archive
+      description: Archive an employee document. The document is not permanently deleted
+        and can be restored.
+      summary: Archive employee document
+      parameters:
+      - in: path
+        name: document_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: employee_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: organization_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Employee Documents
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/employees/organizations/{organization_id}/employees/{employee_id}/documents/{document_id}/restore/:
+    post:
+      operationId: employee_document_restore
+      description: Restore an archived employee document and make it active again.
+      summary: Restore employee document
+      parameters:
+      - in: path
+        name: document_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: employee_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: organization_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Employee Documents
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmployeeDocument'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EmployeeDocument'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EmployeeDocument'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmployeeDocument'
+          description: ''
+  /api/employees/organizations/{organization_id}/employees/{employee_id}/documents/archived/:
+    get:
+      operationId: employee_archived_document_list
+      description: Return all archived documents belonging to the specified employee.
+      summary: List archived employee documents
+      parameters:
+      - in: path
+        name: employee_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: organization_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Employee Documents
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EmployeeDocument'
+          description: ''
+components:
+  schemas:
+    ConfirmationStatusEnum:
+      enum:
+      - NOT_APPLICABLE
+      - PENDING
+      - CONFIRMED
+      - EXTENDED
+      - FAILED
+      type: string
+      description: |-
+        * `NOT_APPLICABLE` - Not Applicable
+        * `PENDING` - Pending
+        * `CONFIRMED` - Confirmed
+        * `EXTENDED` - Extended
+        * `FAILED` - Failed
+    DocumentTypeEnum:
+      enum:
+      - EMPLOYMENT_LETTER
+      - OFFER_LETTER
+      - CONTRACT
+      - IDENTIFICATION
+      - CERTIFICATE
+      - RESUME
+      - OTHER
+      type: string
+      description: |-
+        * `EMPLOYMENT_LETTER` - Employment Letter
+        * `OFFER_LETTER` - Offer Letter
+        * `CONTRACT` - Contract
+        * `IDENTIFICATION` - Identification
+        * `CERTIFICATE` - Certificate
+        * `RESUME` - Resume
+        * `OTHER` - Other
+    EmergencyContact:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        full_name:
+          type: string
+          maxLength: 200
+        relationship:
+          type: string
+          maxLength: 100
+        phone_number:
+          type: string
+          maxLength: 30
+        alternative_phone_number:
+          type: string
+          maxLength: 30
+        email:
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        address:
+          type: string
+        is_primary:
+          type: boolean
+      required:
+      - full_name
+      - id
+      - phone_number
+    Employee:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        employee_number:
+          type: string
+          readOnly: true
+        organization:
+          type: string
+          format: uuid
+        user:
+          type: string
+          format: uuid
+          nullable: true
+        is_active:
+          type: boolean
+        identity:
+          allOf:
+          - $ref: '#/components/schemas/EmployeeIdentity'
+          readOnly: true
+        contact:
+          allOf:
+          - $ref: '#/components/schemas/EmployeeContact'
+          readOnly: true
+        assignment:
+          allOf:
+          - $ref: '#/components/schemas/EmployeeAssignment'
+          readOnly: true
+        employment:
+          allOf:
+          - $ref: '#/components/schemas/Employment'
+          readOnly: true
+        next_of_kin:
+          type: array
+          items:
+            $ref: '#/components/schemas/NextOfKin'
+          readOnly: true
+        emergency_contacts:
+          type: array
+          items:
+            $ref: '#/components/schemas/EmergencyContact'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/EmployeeDocument'
+          readOnly: true
+      required:
+      - assignment
+      - contact
+      - created_at
+      - documents
+      - emergency_contacts
+      - employee_number
+      - employment
+      - id
+      - identity
+      - next_of_kin
+      - organization
+      - updated_at
+    EmployeeAssignment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        branch:
+          type: string
+          format: uuid
+          nullable: true
+        branch_name:
+          type: string
+          readOnly: true
+        department:
+          type: string
+          format: uuid
+          nullable: true
+        department_name:
+          type: string
+          readOnly: true
+        team:
+          type: string
+          format: uuid
+          nullable: true
+        team_name:
+          type: string
+          readOnly: true
+        position:
+          type: string
+          format: uuid
+          nullable: true
+        position_name:
+          type: string
+          readOnly: true
+        job_grade:
+          type: string
+          format: uuid
+          nullable: true
+        job_grade_name:
+          type: string
+          readOnly: true
+        manager:
+          type: string
+          format: uuid
+          nullable: true
+      required:
+      - branch_name
+      - department_name
+      - id
+      - job_grade_name
+      - position_name
+      - team_name
+    EmployeeAssignmentInput:
+      type: object
+      properties:
+        branch:
+          type: string
+          format: uuid
+          nullable: true
+        department:
+          type: string
+          format: uuid
+          nullable: true
+        team:
+          type: string
+          format: uuid
+          nullable: true
+        position:
+          type: string
+          format: uuid
+          nullable: true
+        job_grade:
+          type: string
+          format: uuid
+          nullable: true
+        manager:
+          type: string
+          format: uuid
+          nullable: true
+    EmployeeContact:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        personal_email:
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        company_email:
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        phone_number:
+          type: string
+          maxLength: 30
+        address:
+          type: string
+      required:
+      - id
+    EmployeeContactInput:
+      type: object
+      properties:
+        personal_email:
+          oneOf:
+          - type: string
+            format: email
+          - type: string
+            maxLength: 0
+        company_email:
+          oneOf:
+          - type: string
+            format: email
+          - type: string
+            maxLength: 0
+        phone_number:
+          type: string
+          maxLength: 30
+        address:
+          type: string
+    EmployeeCreate:
+      type: object
+      properties:
+        identity:
+          $ref: '#/components/schemas/EmployeeIdentityInput'
+        contact:
+          $ref: '#/components/schemas/EmployeeContactInput'
+        assignment:
+          $ref: '#/components/schemas/EmployeeAssignmentInput'
+        employment:
+          $ref: '#/components/schemas/EmploymentInput'
+      required:
+      - identity
+    EmployeeDocument:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        document_type:
+          $ref: '#/components/schemas/DocumentTypeEnum'
+        name:
+          type: string
+          maxLength: 255
+        file:
+          type: string
+          format: uri
+        description:
+          type: string
+        issue_date:
+          type: string
+          format: date
+          nullable: true
+        expiry_date:
+          type: string
+          format: date
+          nullable: true
+        is_archived:
+          type: boolean
+          readOnly: true
+        archived_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        archived_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - archived_at
+      - archived_by
+      - created_at
+      - document_type
+      - file
+      - id
+      - is_archived
+      - name
+      - updated_at
+    EmployeeIdentity:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        first_name:
+          type: string
+          maxLength: 100
+        middle_name:
+          type: string
+          maxLength: 100
+        last_name:
+          type: string
+          maxLength: 100
+        date_of_birth:
+          type: string
+          format: date
+          nullable: true
+        gender:
+          type: string
+          maxLength: 30
+      required:
+      - first_name
+      - id
+      - last_name
+    EmployeeIdentityInput:
+      type: object
+      properties:
+        first_name:
+          type: string
+          maxLength: 100
+        middle_name:
+          type: string
+          maxLength: 100
+        last_name:
+          type: string
+          maxLength: 100
+        date_of_birth:
+          type: string
+          format: date
+          nullable: true
+        gender:
+          type: string
+          maxLength: 30
+      required:
+      - first_name
+      - last_name
+    Employment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        employment_type:
+          $ref: '#/components/schemas/EmploymentTypeEnum'
+        employment_status:
+          $ref: '#/components/schemas/EmploymentStatusEnum'
+        offer_date:
+          type: string
+          format: date
+          nullable: true
+        employment_start_date:
+          type: string
+          format: date
+          nullable: true
+        probation_end_date:
+          type: string
+          format: date
+          nullable: true
+        confirmation_status:
+          $ref: '#/components/schemas/ConfirmationStatusEnum'
+        confirmation_date:
+          type: string
+          format: date
+          nullable: true
+        date_left:
+          type: string
+          format: date
+          nullable: true
+      required:
+      - id
+    EmploymentInput:
+      type: object
+      properties:
+        employment_type:
+          $ref: '#/components/schemas/EmploymentTypeEnum'
+        employment_status:
+          $ref: '#/components/schemas/EmploymentStatusEnum'
+        offer_date:
+          type: string
+          format: date
+          nullable: true
+        employment_start_date:
+          type: string
+          format: date
+          nullable: true
+        probation_end_date:
+          type: string
+          format: date
+          nullable: true
+        confirmation_status:
+          $ref: '#/components/schemas/ConfirmationStatusEnum'
+        confirmation_date:
+          type: string
+          format: date
+          nullable: true
+        date_left:
+          type: string
+          format: date
+          nullable: true
+    EmploymentStatusEnum:
+      enum:
+      - ACTIVE
+      - PROBATION
+      - SUSPENDED
+      - RESIGNED
+      - TERMINATED
+      - RETIRED
+      type: string
+      description: |-
+        * `ACTIVE` - Active
+        * `PROBATION` - Probation
+        * `SUSPENDED` - Suspended
+        * `RESIGNED` - Resigned
+        * `TERMINATED` - Terminated
+        * `RETIRED` - Retired
+    EmploymentTypeEnum:
+      enum:
+      - PERMANENT
+      - CONTRACT
+      - TEMPORARY
+      - INTERN
+      - PART_TIME
+      type: string
+      description: |-
+        * `PERMANENT` - Permanent
+        * `CONTRACT` - Contract
+        * `TEMPORARY` - Temporary
+        * `INTERN` - Intern
+        * `PART_TIME` - Part Time
+    Login:
+      type: object
+      properties:
+        email:
+          type: string
+          writeOnly: true
+        password:
+          type: string
+          writeOnly: true
+      required:
+      - email
+      - password
+    LogoutRequest:
+      type: object
+      properties:
+        refresh:
+          type: string
+      required:
+      - refresh
+    Me:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+        first_name:
+          type: string
+          readOnly: true
+        last_name:
+          type: string
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+        is_staff:
+          type: boolean
+          readOnly: true
+      required:
+      - email
+      - first_name
+      - id
+      - is_active
+      - is_staff
+      - last_name
+    NextOfKin:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        full_name:
+          type: string
+          maxLength: 200
+        relationship:
+          type: string
+          maxLength: 100
+        phone_number:
+          type: string
+          maxLength: 30
+        email:
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        address:
+          type: string
+        is_primary:
+          type: boolean
+      required:
+      - full_name
+      - id
+      - phone_number
+      - relationship
+    PatchedEmployeeCreate:
+      type: object
+      properties:
+        identity:
+          $ref: '#/components/schemas/EmployeeIdentityInput'
+        contact:
+          $ref: '#/components/schemas/EmployeeContactInput'
+        assignment:
+          $ref: '#/components/schemas/EmployeeAssignmentInput'
+        employment:
+          $ref: '#/components/schemas/EmploymentInput'
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+      required:
+      - access
+      - refresh
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
