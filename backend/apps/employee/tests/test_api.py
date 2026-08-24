@@ -1647,3 +1647,516 @@ class EmployeeAPITests(APITestCase):
             str(document.id),
             document_ids,
         )
+
+    def test_provision_employee_account_api(self):
+
+        employee = EmployeeService.create_employee(
+            organization=self.organization,
+            first_name="Jane",
+            last_name="Smith",
+            company_email="jane.smith@testcompany.com",
+        )
+
+        url = (
+            f"/api/employees/"
+            f"organizations/{self.organization.id}/"
+            f"employees/{employee.id}/"
+            f"account/provision/"
+        )
+
+        response = self.client.post(
+            url,
+            {
+                "role_code": "EMPLOYEE",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        employee.refresh_from_db()
+
+        self.assertIsNotNone(
+            employee.user_id,
+        )
+
+        self.assertEqual(
+            employee.user.email,
+            "jane.smith@testcompany.com",
+        )
+
+        self.assertFalse(
+            employee.user.has_usable_password(),
+        )
+
+    def test_viewer_cannot_provision_employee_account(self):
+
+        viewer = User.objects.create_user(
+            email="provision.viewer@testcompany.com",
+            password="TestPassword123!",
+            first_name="Provision",
+            last_name="Viewer",
+        )
+
+        viewer_role = RoleService.provision_system_role(
+            organization=self.organization,
+            role_code="VIEWER",
+        )
+
+        AccessService.assign_role(
+            user=viewer,
+            organization=self.organization,
+            role=viewer_role,
+        )
+
+        employee = EmployeeService.create_employee(
+            organization=self.organization,
+            first_name="Jane",
+            last_name="Smith",
+            company_email="jane.smith@testcompany.com",
+        )
+
+        self.client.force_authenticate(
+            user=viewer,
+        )
+
+        url = (
+            f"/api/employees/"
+            f"organizations/{self.organization.id}/"
+            f"employees/{employee.id}/"
+            f"account/provision/"
+        )
+
+        response = self.client.post(
+            url,
+            {
+                "role_code": "EMPLOYEE",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+        employee.refresh_from_db()
+
+        self.assertIsNone(
+            employee.user_id,
+        )
+
+    def test_provision_employee_account_api_twice(self):
+
+        employee = EmployeeService.create_employee(
+            organization=self.organization,
+            first_name="Jane",
+            last_name="Smith",
+            company_email="jane.smith@testcompany.com",
+        )
+
+        url = (
+            f"/api/employees/"
+            f"organizations/{self.organization.id}/"
+            f"employees/{employee.id}/"
+            f"account/provision/"
+        )
+
+        first_response = self.client.post(
+            url,
+            {
+                "role_code": "EMPLOYEE",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            first_response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        second_response = self.client.post(
+            url,
+            {
+                "role_code": "EMPLOYEE",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            second_response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+    def test_cannot_provision_account_for_another_organization_employee(
+        self,
+    ):
+
+        another_organization = Organization.objects.create(
+            name="Another Company",
+            legal_name="Another Company Limited",
+        )
+
+        another_employee = EmployeeService.create_employee(
+            organization=another_organization,
+            first_name="Jane",
+            last_name="Smith",
+            company_email="jane@anothercompany.com",
+        )
+
+        url = (
+            f"/api/employees/"
+            f"organizations/{self.organization.id}/"
+            f"employees/{another_employee.id}/"
+            f"account/provision/"
+        )
+
+        response = self.client.post(
+            url,
+            {
+                "role_code": "EMPLOYEE",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_404_NOT_FOUND,
+        )
+
+        another_employee.refresh_from_db()
+
+        self.assertIsNone(
+            another_employee.user_id,
+        )
+
+
+    def test_invite_employee_account(self):
+
+        employee = EmployeeService.create_employee(
+            organization=self.organization,
+            first_name="Jane",
+            last_name="Smith",
+            company_email="jane.smith@testcompany.com",
+        )
+
+        EmployeeService.provision_employee_account(
+            employee=employee,
+            role_code="EMPLOYEE",
+        )
+
+        url = (
+            f"/api/employees/"
+            f"organizations/{self.organization.id}/"
+            f"employees/{employee.id}/"
+            f"account/invite/"
+        )
+
+        response = self.client.post(
+            url,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            response.data["detail"],
+            "Invitation sent successfully.",
+        )
+
+
+    def test_cannot_invite_employee_without_account(self):
+
+        employee = EmployeeService.create_employee(
+            organization=self.organization,
+            first_name="Jane",
+            last_name="Smith",
+            company_email="jane.smith@testcompany.com",
+        )
+
+        url = (
+            f"/api/employees/"
+            f"organizations/{self.organization.id}/"
+            f"employees/{employee.id}/"
+            f"account/invite/"
+        )
+
+        response = self.client.post(
+            url,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+    def test_cannot_invite_account_after_password_setup(
+        self,
+    ):
+
+        employee = EmployeeService.create_employee(
+            organization=self.organization,
+            first_name="Jane",
+            last_name="Smith",
+            company_email="jane.smith@testcompany.com",
+        )
+
+        result = (
+            EmployeeService
+            .provision_employee_account(
+                employee=employee,
+                role_code="EMPLOYEE",
+            )
+        )
+
+        user = result["user"]
+
+        user.set_password(
+            "ExistingPassword123!"
+        )
+
+        user.password_reset_required = False
+
+        user.save(
+            update_fields=[
+                "password",
+                "password_reset_required",
+            ]
+        )
+
+        url = (
+            f"/api/employees/"
+            f"organizations/{self.organization.id}/"
+            f"employees/{employee.id}/"
+            f"account/invite/"
+        )
+
+        response = self.client.post(
+            url,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+    def test_viewer_cannot_invite_employee_account(
+        self,
+    ):
+
+        viewer = User.objects.create_user(
+            email="viewer@testcompany.com",
+            password="TestPassword123!",
+            first_name="Test",
+            last_name="Viewer",
+        )
+
+        role = RoleService.provision_system_role(
+            organization=self.organization,
+            role_code="VIEWER",
+        )
+
+        AccessService.assign_role(
+            user=viewer,
+            organization=self.organization,
+            role=role,
+        )
+
+        employee = EmployeeService.create_employee(
+            organization=self.organization,
+            first_name="Jane",
+            last_name="Smith",
+            company_email="jane.smith@testcompany.com",
+        )
+
+        EmployeeService.provision_employee_account(
+            employee=employee,
+            role_code="EMPLOYEE",
+        )
+
+        self.client.force_authenticate(
+            user=viewer,
+        )
+
+        url = (
+            f"/api/employees/"
+            f"organizations/{self.organization.id}/"
+            f"employees/{employee.id}/"
+            f"account/invite/"
+        )
+
+        response = self.client.post(
+            url,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+    def test_activate_employee_api(self):
+
+        employee = EmployeeService.create_employee(
+            organization=self.organization,
+            first_name="Jane",
+            last_name="Smith",
+            company_email="jane.smith@testcompany.com",
+        )
+
+        EmployeeService.deactivate_employee(
+            employee=employee,
+        )
+
+        url = (
+            f"/api/employees/"
+            f"organizations/{self.organization.id}/"
+            f"employees/{employee.id}/"
+            f"activate/"
+        )
+
+        response = self.client.post(
+            url,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        employee.refresh_from_db()
+
+        self.assertTrue(
+            employee.is_active,
+        )
+
+    def test_activate_active_employee_api(
+        self,
+    ):
+    
+        url = (
+            f"/api/employees/"
+            f"organizations/{self.organization.id}/"
+            f"employees/{self.employee.id}/"
+            f"activate/"
+        )
+    
+        response = self.client.post(
+            url,
+            format="json",
+        )
+    
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+    
+        self.assertEqual(
+            response.data["detail"],
+            "Employee is already active.",
+        )
+    
+    def test_viewer_cannot_activate_employee(
+        self,
+    ):
+    
+        viewer = User.objects.create_user(
+            email="activate.viewer@testcompany.com",
+            password="TestPassword123!",
+            first_name="Activate",
+            last_name="Viewer",
+        )
+    
+        viewer_role = RoleService.provision_system_role(
+            organization=self.organization,
+            role_code="VIEWER",
+        )
+    
+        AccessService.assign_role(
+            user=viewer,
+            organization=self.organization,
+            role=viewer_role,
+        )
+    
+        EmployeeService.deactivate_employee(
+            employee=self.employee,
+        )
+    
+        self.client.force_authenticate(
+            user=viewer,
+        )
+    
+        url = (
+            f"/api/employees/"
+            f"organizations/{self.organization.id}/"
+            f"employees/{self.employee.id}/"
+            f"activate/"
+        )
+    
+        response = self.client.post(
+            url,
+            format="json",
+        )
+    
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+    
+        self.employee.refresh_from_db()
+    
+        self.assertFalse(
+            self.employee.is_active
+        )
+    
+    def test_cannot_activate_employee_from_another_organization(
+        self,
+    ):
+    
+        another_organization = Organization.objects.create(
+            name="Another Company",
+            legal_name="Another Company Limited",
+        )
+    
+        another_employee = EmployeeService.create_employee(
+            organization=another_organization,
+            first_name="Jane",
+            last_name="Smith",
+            company_email="jane@anothercompany.com",
+        )
+    
+        EmployeeService.deactivate_employee(
+            employee=another_employee,
+        )
+    
+        url = (
+            f"/api/employees/"
+            f"organizations/{self.organization.id}/"
+            f"employees/{another_employee.id}/"
+            f"activate/"
+        )
+    
+        response = self.client.post(
+            url,
+            format="json",
+        )
+    
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_404_NOT_FOUND,
+        )
+    
+        another_employee.refresh_from_db()
+    
+        self.assertFalse(
+            another_employee.is_active
+        )

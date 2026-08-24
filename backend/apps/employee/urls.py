@@ -7,6 +7,9 @@ from .views import (
     EmployeeDocumentDetailView,
     EmployeeArchivedDocumentListView,
     EmployeeDocumentRestoreView,
+    EmployeeAccountProvisionView,
+    EmployeeAccountInviteView,
+    EmployeeActivateView,
 )
 
 urlpatterns = [
@@ -47,6 +50,25 @@ urlpatterns = [
         "<uuid:employee_id>/documents/<uuid:document_id>/restore/",
         EmployeeDocumentRestoreView.as_view(),
         name="employee-document-restore",
+    ),
+
+    path(
+        "organizations/<uuid:organization_id>/employees/<uuid:employee_id>/account/provision/",
+        EmployeeAccountProvisionView.as_view(),
+        name="employee-account-provision",
+    ),
+
+    path(
+        "organizations/<uuid:organization_id>/employees/"
+        "<uuid:employee_id>/account/invite/",
+        EmployeeAccountInviteView.as_view(),
+        name="employee-account-invite",
+    ),
+
+    path(
+        "organizations/<uuid:organization_id>/employees/<uuid:employee_id>/activate/",
+        EmployeeActivateView.as_view(),
+        name="employee-activate",
     ),
 ]
 

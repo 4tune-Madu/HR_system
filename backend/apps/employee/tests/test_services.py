@@ -11,6 +11,7 @@ from apps.employee.models import (
 )
 from apps.employee.services import (
     EmployeeService,
+    RoleService,
 )
 
 from apps.organization.models import (
@@ -22,6 +23,15 @@ from apps.organization.models import (
     Branch
 )
 
+from apps.access.models import (
+    OrganizationMembership,
+)
+
+from apps.access.services import (
+    AccessService,
+)
+
+from apps.accounts.models import User
 
 class EmployeeServiceTests(TestCase):
 
@@ -639,3 +649,449 @@ class EmployeeServiceTests(TestCase):
             employee.assignment.department,
             new_department,
         )
+
+    def test_provision_employee_account(self):
+
+        employee = EmployeeService.create_employee(
+            organization=self.organization,
+            first_name="John",
+            last_name="Doe",
+            company_email="john.doe@testcompany.com",
+            department=self.department,
+            position=self.position,
+            job_grade=self.job_grade,
+        )
+
+        result = EmployeeService.provision_employee_account(
+            employee=employee,
+            role_code="EMPLOYEE",
+        )
+
+        employee.refresh_from_db()
+        user = result["user"]
+
+        self.assertIsNotNone(
+            employee.user,
+        )
+
+        self.assertEqual(
+            employee.user_id,
+            user.id,
+        )
+
+        self.assertEqual(
+            user.email,
+            "john.doe@testcompany.com",
+        )
+
+        self.assertEqual(
+            user.first_name,
+            "John",
+        )
+
+        self.assertEqual(
+            user.last_name,
+            "Doe",
+        )
+
+        self.assertFalse(
+            user.has_usable_password(),
+        )
+
+        self.assertTrue(
+            OrganizationMembership.objects.filter(
+                user=user,
+                organization=self.organization,
+                is_active=True,
+                role=result["role"],
+            ).exists()
+        )
+
+    def test_cannot_provision_employee_account_twice(self):
+
+        employee = EmployeeService.create_employee(
+            organization=self.organization,
+            first_name="John",
+            last_name="Doe",
+            company_email="john.doe@testcompany.com",
+        )
+
+        EmployeeService.provision_employee_account(
+            employee=employee,
+            role_code="EMPLOYEE",
+        )
+
+        with self.assertRaises(ValueError):
+            EmployeeService.provision_employee_account(
+                employee=employee,
+                role_code="EMPLOYEE",
+            )
+
+
+    def test_provision_employee_account_requires_company_email(
+        self,
+    ):
+
+        employee = EmployeeService.create_employee(
+            organization=self.organization,
+            first_name="John",
+            last_name="Doe",
+        )
+
+        with self.assertRaises(ValueError) as context:
+
+            EmployeeService.provision_employee_account(
+                employee=employee,
+                role_code="EMPLOYEE",
+            )
+
+        self.assertIn(
+            "company email",
+            str(context.exception).lower(),
+        )
+
+    def test_provision_employee_account_rejects_existing_email(
+        self,
+    ):
+
+        User.objects.create_user(
+            email="john.doe@testcompany.com",
+            password="ExistingPassword123!",
+            first_name="Existing",
+            last_name="User",
+        )
+
+        employee = EmployeeService.create_employee(
+            organization=self.organization,
+            first_name="John",
+            last_name="Doe",
+            company_email="john.doe@testcompany.com",
+        )
+
+        with self.assertRaises(ValueError):
+
+            EmployeeService.provision_employee_account(
+                employee=employee,
+                role_code="EMPLOYEE",
+            )
+
+
+    def test_provision_employee_account_rejects_forbidden_role(
+        self,
+    ):
+        employee = EmployeeService.create_employee(
+            organization=self.organization,
+            first_name="John",
+            last_name="Doe",
+            company_email="john.doe@testcompany.com",
+        )
+
+        with self.assertRaises(ValueError) as context:
+            EmployeeService.provision_employee_account(
+                employee=employee,
+                role_code="ORGANIZATION_ADMIN",
+            )
+
+        self.assertIn(
+            "cannot be assigned",
+            str(context.exception),
+        )
+
+        employee.refresh_from_db()
+
+        self.assertIsNone(
+            employee.user_id
+        )
+
+        self.assertFalse(
+            User.objects.filter(
+                email="john.doe@testcompany.com"
+            ).exists()
+        )
+
+    def test_deactivate_employee_deactivates_account_access(
+        self,
+    ):
+
+        employee = EmployeeService.create_employee(
+            organization=self.organization,
+            first_name="John",
+            last_name="Doe",
+            company_email="john.doe@testcompany.com",
+        )
+
+        result = (
+            EmployeeService
+            .provision_employee_account(
+                employee=employee,
+                role_code="EMPLOYEE",
+            )
+        )
+
+        user = result["user"]
+
+        employee.refresh_from_db()
+
+        self.assertTrue(
+            employee.is_active,
+        )
+
+        self.assertTrue(
+            user.is_active,
+        )
+
+        self.assertTrue(
+            OrganizationMembership.objects.filter(
+                user=user,
+                organization=self.organization,
+                is_active=True,
+            ).exists()
+        )
+
+        EmployeeService.deactivate_employee(
+            employee=employee,
+        )
+
+        employee.refresh_from_db()
+        user.refresh_from_db()
+
+        self.assertFalse(
+            employee.is_active,
+        )
+
+        self.assertFalse(
+            user.is_active,
+        )
+
+        self.assertFalse(
+            OrganizationMembership.objects.filter(
+                user=user,
+                organization=self.organization,
+                is_active=True,
+            ).exists()
+        )
+
+        # Relationship is preserved
+        self.assertEqual(
+            employee.user_id,
+            user.id,
+        )
+
+    def test_deactivate_employee_does_not_disable_user_with_other_active_membership(
+        self,
+    ):
+
+        another_organization = (
+            Organization.objects.create(
+                name="Another Company",
+                legal_name="Another Company Limited",
+            )
+        )
+
+        employee = EmployeeService.create_employee(
+            organization=self.organization,
+            first_name="John",
+            last_name="Doe",
+            company_email="john.doe@testcompany.com",
+        )
+
+        result = (
+            EmployeeService
+            .provision_employee_account(
+                employee=employee,
+                role_code="EMPLOYEE",
+            )
+        )
+
+        user = result["user"]
+
+        another_role = (
+            RoleService.provision_system_role(
+                organization=another_organization,
+                role_code="EMPLOYEE",
+            )
+        )
+
+        AccessService.assign_role(
+            user=user,
+            organization=another_organization,
+            role=another_role,
+        )
+
+        EmployeeService.deactivate_employee(
+            employee=employee,
+        )
+
+        employee.refresh_from_db()
+        user.refresh_from_db()
+
+        self.assertFalse(
+            employee.is_active,
+        )
+
+        self.assertTrue(
+            user.is_active,
+        )
+
+        self.assertFalse(
+            OrganizationMembership.objects.filter(
+                user=user,
+                organization=self.organization,
+                is_active=True,
+            ).exists()
+        )
+
+        self.assertTrue(
+            OrganizationMembership.objects.filter(
+                user=user,
+                organization=another_organization,
+                is_active=True,
+            ).exists()
+        )
+
+    def test_activate_employee(self):
+
+        employee = EmployeeService.create_employee(
+            organization=self.organization,
+            first_name="John",
+            last_name="Doe",
+            company_email="john.doe@testcompany.com",
+        )
+
+        result = (
+            EmployeeService
+            .provision_employee_account(
+                employee=employee,
+                role_code="EMPLOYEE",
+            )
+        )
+
+        user = result["user"]
+
+        EmployeeService.deactivate_employee(
+            employee=employee,
+        )
+
+        employee.refresh_from_db()
+        user.refresh_from_db()
+
+        self.assertFalse(
+            employee.is_active,
+        )
+
+        self.assertFalse(
+            user.is_active,
+        )
+
+        EmployeeService.activate_employee(
+            employee=employee,
+        )
+
+        employee.refresh_from_db()
+        user.refresh_from_db()
+
+        self.assertTrue(
+            employee.is_active,
+        )
+
+        self.assertTrue(
+            user.is_active,
+        )
+
+        self.assertTrue(
+            OrganizationMembership.objects.filter(
+                user=user,
+                organization=self.organization,
+                is_active=True,
+            ).exists()
+        )
+
+
+    def test_cannot_activate_active_employee(self):
+
+        employee = EmployeeService.create_employee(
+            organization=self.organization,
+            first_name="John",
+            last_name="Doe",
+            company_email="john.doe@testcompany.com",
+        )
+
+        with self.assertRaises(ValueError):
+            EmployeeService.activate_employee(
+                employee=employee,
+            )
+
+    def test_activate_employee_preserves_password_setup_requirement(
+        self,
+    ):
+
+        employee = EmployeeService.create_employee(
+            organization=self.organization,
+            first_name="John",
+            last_name="Doe",
+            company_email="john.doe@testcompany.com",
+        )
+
+        result = (
+            EmployeeService
+            .provision_employee_account(
+                employee=employee,
+                role_code="EMPLOYEE",
+            )
+        )
+
+        user = result["user"]
+
+        self.assertTrue(
+            user.password_reset_required
+        )
+
+        EmployeeService.deactivate_employee(
+            employee=employee,
+        )
+
+        EmployeeService.activate_employee(
+            employee=employee,
+        )
+
+        user.refresh_from_db()
+
+        self.assertTrue(
+            user.password_reset_required
+        )
+
+        self.assertFalse(
+            user.has_usable_password()
+        )
+
+    def test_activate_employee_requires_organization_membership(
+        self,
+    ):
+    
+        employee = EmployeeService.create_employee(
+            organization=self.organization,
+            first_name="John",
+            last_name="Doe",
+            company_email="john.doe@testcompany.com",
+        )
+    
+        result = EmployeeService.provision_employee_account(
+            employee=employee,
+            role_code="EMPLOYEE",
+        )
+    
+        user = result["user"]
+    
+        OrganizationMembership.objects.filter(
+            user=user,
+            organization=self.organization,
+        ).delete()
+    
+        EmployeeService.deactivate_employee(
+            employee=employee,
+        )
+    
+        with self.assertRaises(ValueError):
+            EmployeeService.activate_employee(
+                employee=employee,
+            )

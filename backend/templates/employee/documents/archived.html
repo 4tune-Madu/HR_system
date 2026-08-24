@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Archived Documents
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+        <div>
+
+    <a
+        href="{% url 'employee:detail' organization_id=organization.id employee_id=employee.id %}"
+    >
+        Back to Employee
+    </a>
+
+    <h1 class="page-title">
+        Archived Documents
+    </h1>
+
+    <p>
+        {{ employee.identity.first_name }}
+        {{ employee.identity.last_name }}
+        —
+        {{ employee.employee_number }}
+    </p>
+
+</div>
+</div>
+    
+
+    <div>
+        <a
+            href="{% url 'employee:document-list' organization_id=organization.id employee_id=employee.id %}"
+        >
+            Active Documents
+        </a>
+    </div>
+
+</div>
+
+
+<div class="card">
+
+    {% if documents %}
+
+        <table>
+
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Issue Date</th>
+                    <th>Expiry Date</th>
+                    <th>Archived At</th>
+                    <th>Archived By</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for document in documents %}
+
+                    <tr>
+
+                        <td>
+                            {{ document.name }}
+                        </td>
+
+                        <td>
+                            {{ document.get_document_type_display }}
+                        </td>
+
+                        <td>
+                            {{ document.issue_date|default:"—" }}
+                        </td>
+
+                        <td>
+                            {{ document.expiry_date|default:"—" }}
+                        </td>
+
+                        <td>
+                            {% if document.archived_at %}
+                                {{ document.archived_at|date:"d M Y, H:i" }}
+                            {% else %}
+                                —
+                            {% endif %}
+                        </td>
+
+                        <td>
+                        {% if document.archived_by %}
+                            {{ document.archived_by.first_name }}
+                            {{ document.archived_by.last_name }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+
+                    </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    {% else %}
+
+        <div class="empty">
+            This employee has no archived documents.
+        </div>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

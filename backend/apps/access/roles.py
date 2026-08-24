@@ -7,6 +7,10 @@ ROLE_PERMISSIONS = {
         "employee.create",
         "employee.update",
         "employee.deactivate",
+        "employee.activate",
+
+        "employee.account.provision",
+        "employee.account.invite",   
 
         "employee.document.view",
         "employee.document.upload",
@@ -25,6 +29,7 @@ ROLE_PERMISSIONS = {
         "payroll.view_own",
     ],
 
+
     "HR_MANAGER": [
         "organization.view",
 
@@ -32,6 +37,8 @@ ROLE_PERMISSIONS = {
         "employee.create",
         "employee.update",
         "employee.deactivate",
+
+        "employee.account.provision",
 
         "employee.document.view",
         "employee.document.upload",
@@ -55,6 +62,8 @@ ROLE_PERMISSIONS = {
         "employee.view",
         "employee.create",
         "employee.update",
+
+        "employee.account.provision",
 
         "employee.document.view",
         "employee.document.upload",

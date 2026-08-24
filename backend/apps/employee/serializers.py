@@ -404,3 +404,11 @@ class EmployeeDocumentInputSerializer(
         required=False,
         allow_null=True,
     )
+
+class EmployeeAccountProvisionSerializer(
+    serializers.Serializer
+):
+    role_code = serializers.CharField(
+        required=False,
+        default="EMPLOYEE",
+    )

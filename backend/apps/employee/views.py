@@ -40,6 +40,9 @@ from apps.access.permissions import (
     CanViewEmployeeDocuments,
     CanArchiveEmployeeDocuments,
     CanRestoreEmployeeDocuments,
+    CanProvisionEmployeeAccounts,
+    CanInviteEmployeeAccounts,
+    CanActivateEmployees,
 )
 
 from apps.employee.models import (
@@ -55,6 +58,7 @@ from apps.employee.models import (
 
 from drf_spectacular.utils import (
     extend_schema,
+    OpenApiResponse,
 )
 
 from apps.employee.serializers import (
@@ -63,6 +67,7 @@ from apps.employee.serializers import (
     EmployeeUpdateSerializer,
     EmployeeDocumentSerializer,
     EmployeeDocumentInputSerializer,
+    EmployeeAccountProvisionSerializer,
 )
 
 from apps.employee.services import EmployeeService
@@ -72,6 +77,9 @@ from rest_framework.parsers import (
     FormParser,
 )
 
+from apps.authentication.services import (
+    AccountService,
+)
 from .services import EmployeeDocumentService
 
 class EmployeeListView(APIView):
@@ -1104,6 +1112,275 @@ class EmployeeDocumentRestoreView(APIView):
 
         serializer = EmployeeDocumentSerializer(
             document
+        )
+
+        return Response(
+            serializer.data,
+            status=status.HTTP_200_OK,
+        )
+
+class EmployeeAccountProvisionView(APIView):
+
+    permission_classes = [
+        CanProvisionEmployeeAccounts,
+    ]
+
+    @extend_schema(
+        operation_id="employee_account_provision",
+        summary="Provision employee account",
+        description=(
+            "Create a user account for an existing employee, "
+            "link the account to the employee, create the "
+            "organization membership, assign the requested role, "
+            "and require initial password setup."
+        ),
+        request=EmployeeAccountProvisionSerializer,
+        responses={
+            200: EmployeeSerializer,
+            400: OpenApiResponse(
+                description="Account could not be provisioned."
+            ),
+            404: OpenApiResponse(
+                description="Employee not found."
+            ),
+        },
+        tags=["Employee Accounts"],
+    )
+    def post(
+        self,
+        request,
+        organization_id,
+        employee_id,
+    ):
+
+        # -----------------------------------
+        # Validate request
+        # -----------------------------------
+
+        request_serializer = (
+            EmployeeAccountProvisionSerializer(
+                data=request.data,
+            )
+        )
+
+        request_serializer.is_valid(
+            raise_exception=True,
+        )
+
+        role_code = (
+            request_serializer.validated_data[
+                "role_code"
+            ]
+        )
+
+        # -----------------------------------
+        # Get employee within organization
+        # -----------------------------------
+
+        try:
+
+            employee = EmployeeService.get_employee(
+                employee_id=employee_id,
+                organization=request.organization,
+            )
+
+        except Employee.DoesNotExist:
+
+            return Response(
+                {
+                    "detail": "Employee not found."
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # -----------------------------------
+        # Provision account
+        # -----------------------------------
+
+        try:
+
+            result = (
+                EmployeeService
+                .provision_employee_account(
+                    employee=employee,
+                    role_code=role_code,
+                )
+            )
+
+        except ValueError as exc:
+
+            return Response(
+                {
+                    "detail": str(exc)
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # -----------------------------------
+        # Return employee
+        # -----------------------------------
+
+        response_serializer = EmployeeSerializer(
+            result["employee"],
+        )
+
+        return Response(
+            response_serializer.data,
+            status=status.HTTP_200_OK,
+        )
+
+class EmployeeAccountInviteView(APIView):
+
+    permission_classes = [
+        CanInviteEmployeeAccounts,
+    ]
+
+    @extend_schema(
+        operation_id="employee_account_invite",
+        summary="Send employee account invitation",
+        description=(
+            "Send or resend the password setup invitation "
+            "for an existing employee account."
+        ),
+        responses={
+            200: OpenApiResponse(
+                description="Invitation sent successfully."
+            ),
+            400: OpenApiResponse(
+                description="Employee account is not eligible "
+                "for an invitation."
+            ),
+            404: OpenApiResponse(
+                description="Employee not found."
+            ),
+        },
+        tags=["Employee Accounts"],
+    )
+    def post(
+        self,
+        request,
+        organization_id,
+        employee_id,
+    ):
+
+        try:
+
+            employee = EmployeeService.get_employee(
+                employee_id=employee_id,
+                organization=request.organization,
+            )
+
+        except Employee.DoesNotExist:
+
+            return Response(
+                {
+                    "detail": "Employee not found."
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if employee.user_id is None:
+
+            return Response(
+                {
+                    "detail": (
+                        "Employee does not have "
+                        "an account."
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+
+            AccountService.send_password_setup_invitation(
+                user=employee.user,
+            )
+
+        except ValueError as exc:
+
+            return Response(
+                {
+                    "detail": str(exc)
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response(
+            {
+                "detail": "Invitation sent successfully."
+            },
+            status=status.HTTP_200_OK,
+        )
+
+class EmployeeActivateView(APIView):
+
+    permission_classes = [
+        CanActivateEmployees,
+    ]
+
+    @extend_schema(
+        operation_id="employee_activate",
+        summary="Activate employee",
+        description=(
+            "Reactivate an inactive employee and restore "
+            "their organization membership and account access."
+        ),
+        responses={
+            200: EmployeeSerializer,
+            400: OpenApiResponse(
+                description="Employee is already active or "
+                "cannot be activated."
+            ),
+            404: OpenApiResponse(
+                description="Employee not found."
+            ),
+        },
+        tags=["Employees"],
+    )
+    def post(
+        self,
+        request,
+        organization_id,
+        employee_id,
+    ):
+
+        try:
+
+            employee = EmployeeService.get_employee(
+                employee_id=employee_id,
+                organization=request.organization,
+            )
+
+        except Employee.DoesNotExist:
+
+            return Response(
+                {
+                    "detail": "Employee not found."
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        try:
+
+            employee = (
+                EmployeeService
+                .activate_employee(
+                    employee=employee,
+                )
+            )
+
+        except ValueError as exc:
+
+            return Response(
+                {
+                    "detail": str(exc)
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = EmployeeSerializer(
+            employee,
         )
 
         return Response(

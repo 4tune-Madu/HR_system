@@ -4,6 +4,7 @@ from .views import (
     LoginView,
     LogoutView,
     MeView,
+    SetPasswordView,
 )
 
 from rest_framework_simplejwt.views import (
@@ -34,5 +35,11 @@ urlpatterns = [
         "me/",
         MeView.as_view(),
         name="me",
+    ),
+
+    path(
+        "account/setup/<uidb64>/<token>/",
+        SetPasswordView.as_view(),
+        name="set-password",
     ),
 ]

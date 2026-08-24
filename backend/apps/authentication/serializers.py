@@ -4,7 +4,9 @@ from rest_framework import serializers
 from rest_framework_simplejwt.serializers import (
     TokenObtainPairSerializer,
 )
-
+from django.contrib.auth.password_validation import (
+    validate_password,
+)
 
 class LoginSerializer(
     TokenObtainPairSerializer
@@ -76,3 +78,39 @@ class MeSerializer(
     is_staff = serializers.BooleanField(
         read_only=True
     )
+
+
+class SetPasswordSerializer(serializers.Serializer):
+
+    password = serializers.CharField(
+        write_only=True,
+        min_length=8,
+    )
+
+    password_confirmation = serializers.CharField(
+        write_only=True,
+        min_length=8,
+    )
+
+    def validate(self, attrs):
+
+        password = attrs["password"]
+        password_confirmation = attrs[
+            "password_confirmation"
+        ]
+
+        if password != password_confirmation:
+            raise serializers.ValidationError(
+                {
+                    "password_confirmation": (
+                        "Passwords do not match."
+                    )
+                }
+            )
+
+        validate_password(
+            password,
+            self.context.get("user"),
+        )
+
+        return attrs

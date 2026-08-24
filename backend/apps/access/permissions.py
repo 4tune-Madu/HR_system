@@ -111,3 +111,23 @@ class CanRestoreEmployeeDocuments(
     required_permission = (
         "employee.document.restore"
     )
+
+class CanProvisionEmployeeAccounts(
+    HasOrganizationPermission
+):
+    required_permission = (
+        "employee.account.provision"
+    )
+
+
+class CanInviteEmployeeAccounts(
+    HasOrganizationPermission
+):
+    required_permission = (
+        "employee.account.invite"
+    )
+
+class CanActivateEmployees(
+    HasOrganizationPermission
+):
+    required_permission = "employee.activate"

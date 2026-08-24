@@ -1,5 +1,5 @@
 from django.db import transaction
-
+from apps.core.email_service import EmailService
 from apps.employee.models import (
 Employee,
 EmployeeAssignment,
@@ -10,9 +10,19 @@ NextOfKin,
 EmergencyContact,
 EmployeeDocument,
 )
-
+from apps.access.models import OrganizationMembership
+from django.contrib.auth import get_user_model
 from django.utils import timezone
-from django.db import transaction
+from apps.authentication.services import AccountService
+from apps.access.services import (
+    AccessService,
+    RoleService,
+)
+
+User = get_user_model()
+PROVISIONABLE_EMPLOYEE_ROLES = {
+    "EMPLOYEE",
+}
 
 class EmployeeService:
 
@@ -528,6 +538,7 @@ class EmployeeService:
 
         return employee
 
+
     @staticmethod
     @transaction.atomic
     def deactivate_employee(
@@ -535,19 +546,174 @@ class EmployeeService:
         employee,
     ):
         """
-        Deactivate an employee.
-    
-        The employee record is preserved and only
-        marked as inactive.
+        Deactivate an employee and synchronize their
+        organization membership/account access.
+
+        The employee record itself is preserved.
         """
-    
+
+        if not employee.is_active:
+            raise ValueError(
+                "Employee is already inactive."
+            )
+
+        # -----------------------------------
+        # Deactivate employee
+        # -----------------------------------
+
         employee.is_active = False
+
         employee.save(
             update_fields=[
                 "is_active",
                 "updated_at",
             ]
         )
+
+        # -----------------------------------
+        # No account to synchronize
+        # -----------------------------------
+
+        if employee.user_id is None:
+            return employee
+
+        # -----------------------------------
+        # Deactivate membership for this
+        # organization
+        # -----------------------------------
+
+        OrganizationMembership.objects.filter(
+            user=employee.user,
+            organization=employee.organization,
+            is_active=True,
+        ).update(
+            is_active=False,
+        )
+
+        # -----------------------------------
+        # Disable global User account only
+        # if the user has no other active
+        # organization memberships
+        # -----------------------------------
+
+        has_other_active_membership = (
+            OrganizationMembership.objects
+            .filter(
+                user=employee.user,
+                is_active=True,
+            )
+            .exists()
+        )
+
+        if not has_other_active_membership:
+            employee.user.is_active = False
+
+            employee.user.save(
+                update_fields=[
+                    "is_active",
+                ]
+            )
+
+        return employee
+
+    @staticmethod
+    @transaction.atomic
+    def activate_employee(
+        *,
+        employee,
+    ):
+        """
+        Reactivate an inactive employee and restore
+        access to the employee's organization.
+    
+        The linked User account is reactivated only when
+        the user has at least one active organization
+        membership.
+    
+        Password setup state is not changed.
+        """
+    
+        # -----------------------------------
+        # Employee must currently be inactive
+        # -----------------------------------
+    
+        if employee.is_active:
+            raise ValueError(
+                "Employee is already active."
+            )
+    
+        # -----------------------------------
+        # Activate employee
+        # -----------------------------------
+    
+        employee.is_active = True
+    
+        employee.save(
+            update_fields=[
+                "is_active",
+                "updated_at",
+            ]
+        )
+    
+        # -----------------------------------
+        # Employee has no linked account
+        # -----------------------------------
+    
+        if employee.user_id is None:
+            return employee
+    
+        # -----------------------------------
+        # Find organization membership
+        # -----------------------------------
+    
+        membership = (
+            OrganizationMembership.objects
+            .filter(
+                user=employee.user,
+                organization=employee.organization,
+            )
+            .first()
+        )
+    
+        if membership is None:
+            raise ValueError(
+                "Employee account has no organization membership."
+            )
+    
+        # -----------------------------------
+        # Reactivate membership
+        # -----------------------------------
+    
+        membership.is_active = True
+    
+        membership.save(
+            update_fields=[
+                "is_active",
+            ]
+        )
+    
+        # -----------------------------------
+        # Reactivate User if they now have
+        # at least one active membership
+        # -----------------------------------
+    
+        has_active_membership = (
+            OrganizationMembership.objects
+            .filter(
+                user=employee.user,
+                is_active=True,
+            )
+            .exists()
+        )
+    
+        if has_active_membership:
+            employee.user.is_active = True
+    
+            employee.user.save(
+                update_fields=[
+                    "is_active",
+                ]
+            )
     
         return employee
 
@@ -565,6 +731,161 @@ class EmployeeService:
                 organization=organization,
             )
         )
+
+    @staticmethod
+    @transaction.atomic
+    def provision_employee_account(
+        *,
+        employee,
+        role_code="EMPLOYEE",
+    ):
+        """
+        Create a user account for an existing employee,
+        link the user to the employee, create the organization
+        membership, and assign an allowed role.
+        """
+
+        # -----------------------------------
+        # Validate role
+        # -----------------------------------
+
+        if role_code not in PROVISIONABLE_EMPLOYEE_ROLES:
+            raise ValueError(
+                "This role cannot be assigned during "
+                "employee account provisioning."
+            )
+
+        # -----------------------------------
+        # Employee must not already have account
+        # -----------------------------------
+
+        if employee.user_id is not None:
+            raise ValueError(
+                "Employee already has a user account."
+            )
+
+        # -----------------------------------
+        # Employee identity
+        # -----------------------------------
+
+        identity = employee.identity
+
+        # -----------------------------------
+        # Company email
+        # -----------------------------------
+
+        company_email = (
+            employee.contact.company_email
+            if hasattr(employee, "contact")
+            else None
+        )
+
+        if not company_email:
+            raise ValueError(
+                "Employee must have a company email "
+                "before an account can be provisioned."
+            )
+
+        # -----------------------------------
+        # Existing user check
+        # -----------------------------------
+
+        if User.objects.filter(
+            email__iexact=company_email
+        ).exists():
+            raise ValueError(
+                "A user with this email already exists."
+            )
+
+        # -----------------------------------
+        # Create user
+        # -----------------------------------
+
+        user = User.objects.create_user(
+            email=company_email,
+            first_name=identity.first_name,
+            last_name=identity.last_name,
+        )
+
+        user.set_unusable_password()
+
+        user.password_reset_required = True
+
+        user.save(
+            update_fields=[
+                "password",
+                "password_reset_required",
+            ]
+        )
+
+        # -----------------------------------
+        # Link employee
+        # -----------------------------------
+
+        employee.user = user
+
+        employee.save(
+            update_fields=[
+                "user",
+                "updated_at",
+            ]
+        )
+
+        # -----------------------------------
+        # Provision role
+        # -----------------------------------
+
+        role = RoleService.provision_system_role(
+            organization=employee.organization,
+            role_code=role_code,
+        )
+
+
+        # -----------------------------------
+        # Organization membership
+        # -----------------------------------
+
+        membership = AccessService.assign_role(
+            user=user,
+            organization=employee.organization,
+            role=role,
+        )
+
+        return {
+            "user": user,
+            "employee": employee,
+            "membership": membership,
+            "role": role,
+        }
+
+
+    @staticmethod
+    def generate_password_setup_url(
+        *,
+        user,
+    ):
+        uidb64 = urlsafe_base64_encode(
+            force_bytes(user.pk)
+        )
+
+        token = (
+            AccountService
+            .generate_password_setup_token(
+                user=user,
+            )
+        )
+
+        base_url = (
+            settings.APP_BASE_URL.rstrip("/")
+        )
+
+        return (
+            f"{base_url}"
+            f"/api/auth/account/setup/"
+            f"{uidb64}/{token}/"
+        )
+
+
 
 class EmployeeDocumentService:
 

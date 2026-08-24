@@ -1,40 +1,66 @@
-<!DOCTYPE html>
+{% extends "base.html" %}
 
-<html lang="en">
 
-<head>
+{% block title %}
+    Employees
+{% endblock %}
 
-    <meta charset="UTF-8">
 
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
+{% block content %}
 
-    <title>Employees</title>
+<div class="page-header">
 
-</head>
+    <div>
 
-<body>
+        <h1 class="page-title">
+            Employees
+        </h1>
 
-    <h1>Employees</h1>
+        <p>
+            Manage employees in this organization.
+        </p>
 
-    <p>
-        Organization: {{ organization_id }}
-    </p>
+    </div>
+
+</div>
+
+
+<div class="card">
 
     <table>
 
         <thead>
 
             <tr>
-                <th>Employee Number</th>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Status</th>
+
+                <th>
+                    Employee Number
+                </th>
+
+                <th>
+                    Name
+                </th>
+
+                <th>
+                    Email
+                </th>
+
+                <th>
+                    Department
+                </th>
+
+                <th>
+                    Position
+                </th>
+
+                <th>
+                    Status
+                </th>
+
             </tr>
 
         </thead>
+
 
         <tbody>
 
@@ -43,8 +69,10 @@
                 <tr>
 
                     <td>
-                        {{ employee.employee_number }}
-                    </td>
+    <a href="{% url 'employee:detail' organization_id=organization.id employee_id=employee.id %}">
+        {{ employee.employee_number }}
+    </a>
+</td>
 
                     <td>
                         {{ employee.identity.first_name }}
@@ -56,11 +84,49 @@
                     </td>
 
                     <td>
-                        {% if employee.is_active %}
-                            Active
+
+                        {% if employee.assignment.department %}
+
+                            {{ employee.assignment.department.name }}
+
                         {% else %}
-                            Inactive
+
+                            —
+
                         {% endif %}
+
+                    </td>
+
+                    <td>
+
+                        {% if employee.assignment.position %}
+
+                            {{ employee.assignment.position.title }}
+
+                        {% else %}
+
+                            —
+
+                        {% endif %}
+
+                    </td>
+
+                    <td>
+
+                        {% if employee.is_active %}
+
+                            <span class="status status-active">
+                                Active
+                            </span>
+
+                        {% else %}
+
+                            <span class="status status-inactive">
+                                Inactive
+                            </span>
+
+                        {% endif %}
+
                     </td>
 
                 </tr>
@@ -69,7 +135,10 @@
 
                 <tr>
 
-                    <td colspan="4">
+                    <td
+                        colspan="6"
+                        class="empty"
+                    >
                         No employees found.
                     </td>
 
@@ -81,6 +150,6 @@
 
     </table>
 
-</body>
+</div>
 
-</html>
+{% endblock %}

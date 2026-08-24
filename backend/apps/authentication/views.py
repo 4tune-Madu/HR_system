@@ -8,6 +8,11 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from .serializers import (
     LoginSerializer,
     MeSerializer,
+    SetPasswordSerializer,
+)
+
+from django.utils.http import (
+    urlsafe_base64_encode,
 )
 
 from drf_spectacular.utils import (
@@ -19,7 +24,7 @@ from drf_spectacular.utils import (
 
 from drf_spectacular.types import OpenApiTypes
 from rest_framework import serializers
-
+from .services import AccountService
 
 class LoginView(APIView):
 
@@ -125,5 +130,99 @@ class MeView(APIView):
 
         return Response(
             serializer.data,
+            status=status.HTTP_200_OK,
+        )
+
+class SetPasswordView(APIView):
+
+    permission_classes = [
+        AllowAny,
+    ]
+
+    @extend_schema(
+        operation_id="set_password",
+        summary="Set account password",
+        description=(
+            "Set the password for an invited account "
+            "using a valid one-time setup token."
+        ),
+        request=SetPasswordSerializer,
+        responses={
+            200: OpenApiResponse(
+                description="Password successfully set."
+            ),
+            400: OpenApiResponse(
+                description="Invalid or expired setup link."
+            ),
+        },
+        tags=["Authentication"],
+    )
+    def post(
+        self,
+        request,
+        uidb64,
+        token,
+    ):
+
+        try:
+            user = (
+                AccountService
+                .validate_password_setup_token(
+                    uidb64=uidb64,
+                    token=token,
+                )
+            )
+
+        except ValueError as exc:
+
+            return Response(
+                {
+                    "detail": str(exc)
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # -----------------------------------
+        # Safeguard: Block already active users
+        # -----------------------------------
+        if user.has_usable_password():
+            return Response(
+                {
+                    "detail": "This account has already been set up."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        serializer = SetPasswordSerializer(
+            data=request.data,
+            context={
+                "user": user,
+            },
+        )
+
+        serializer.is_valid(
+            raise_exception=True
+        )
+
+        try:
+            AccountService.set_password(
+                user=user,
+                password=serializer.validated_data[
+                    "password"
+                ],
+            )
+
+        except ValueError as exc:
+
+            return Response(
+                {
+                    "detail": str(exc)
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response(
+            {
+                "detail": "Password successfully set."
+            },
             status=status.HTTP_200_OK,
         )

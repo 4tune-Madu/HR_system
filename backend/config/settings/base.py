@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'apps.employee',
     'apps.authentication',
     'apps.access',
+    'apps.leave',
 
     # Third Party
     'rest_framework',
@@ -187,3 +188,12 @@ SIMPLE_JWT = {
 LOGIN_URL = "/login/"
 LOGIN_REDIRECT_URL = "/dashboard/"
 LOGOUT_REDIRECT_URL = "/login/"
+
+
+EMAIL_BACKEND = (
+    "django.core.mail.backends.locmem.EmailBackend"
+)
+
+DEFAULT_FROM_EMAIL = "noreply@hrsystem.local"
+
+APP_BASE_URL = "http://127.0.0.1:8000"
