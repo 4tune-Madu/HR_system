@@ -20,6 +20,7 @@ ROLE_PERMISSIONS = {
         "leave.view",
         "leave.request",
         "leave.approve",
+        "leave.manage",
 
         "attendance.view",
 

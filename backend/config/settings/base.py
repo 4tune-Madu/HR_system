@@ -14,6 +14,7 @@ import os
 from datetime import timedelta
 from dotenv import load_dotenv
 from pathlib import Path
+from celery.schedules import crontab
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -197,3 +198,75 @@ EMAIL_BACKEND = (
 DEFAULT_FROM_EMAIL = "noreply@hrsystem.local"
 
 APP_BASE_URL = "http://127.0.0.1:8000"
+
+CELERY_BROKER_URL = os.getenv(
+    "CELERY_BROKER_URL",
+    "redis://127.0.0.1:6379/0",
+)
+
+CELERY_RESULT_BACKEND = os.getenv(
+    "CELERY_RESULT_BACKEND",
+    "redis://127.0.0.1:6379/1",
+)
+
+CELERY_ACCEPT_CONTENT = [
+    "json",
+]
+
+CELERY_TASK_SERIALIZER = "json"
+
+CELERY_RESULT_SERIALIZER = "json"
+
+CELERY_TIMEZONE = TIME_ZONE
+
+CELERY_ENABLE_UTC = True
+
+CELERY_BEAT_SCHEDULE = {
+    "monthly-leave-accrual": {
+        "task": (
+            "apps.leave.tasks."
+            "accrue_leave_for_current_month"
+        ),
+        "schedule": crontab(
+            day_of_month=1,
+            hour=1,
+            minute=0,
+        ),
+    },
+
+    "initialize-leave-balances-yearly": {
+        "task": (
+            "apps.leave.tasks."
+            "initialize_leave_balances_for_current_year"
+        ),
+        "schedule": crontab(
+            month_of_year=1,
+            day_of_month=1,
+            hour=0,
+            minute=30,
+        ),
+    },
+
+    "accrue-leave-monthly": {
+        "task": (
+            "apps.leave.tasks."
+            "accrue_leave_for_current_month"
+        ),
+        "schedule": crontab(
+            day_of_month=1,
+            hour=1,
+            minute=0,
+        ),
+    },
+
+    "reconcile-leave-accruals": {
+        "task": (
+            "apps.leave.tasks."
+            "reconcile_current_year_leave_accruals"
+        ),
+        "schedule": crontab(
+            hour=2,
+            minute=0,
+        ),
+    },
+}

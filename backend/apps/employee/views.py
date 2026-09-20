@@ -1242,6 +1242,7 @@ class EmployeeAccountInviteView(APIView):
             "Send or resend the password setup invitation "
             "for an existing employee account."
         ),
+        request=None,
         responses={
             200: OpenApiResponse(
                 description="Invitation sent successfully."
@@ -1326,6 +1327,7 @@ class EmployeeActivateView(APIView):
             "Reactivate an inactive employee and restore "
             "their organization membership and account access."
         ),
+        request=None,
         responses={
             200: EmployeeSerializer,
             400: OpenApiResponse(

@@ -131,3 +131,25 @@ class CanActivateEmployees(
     HasOrganizationPermission
 ):
     required_permission = "employee.activate"
+
+class CanViewLeave(
+    HasOrganizationPermission
+):
+    required_permission = "leave.view"
+
+
+class CanRequestLeave(
+    HasOrganizationPermission
+):
+    required_permission = "leave.request"
+
+
+class CanApproveLeave(
+    HasOrganizationPermission
+):
+    required_permission = "leave.approve"
+
+class CanManageLeave(
+    HasOrganizationPermission
+):
+    required_permission = "leave.manage"

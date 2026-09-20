@@ -34,6 +34,11 @@ urlpatterns = [
         include("apps.authentication.web_urls"),
     ),
 
+    path(
+        "api/leave/",
+        include("apps.leave.urls"),
+    ),
+
     # API documentation
 
     path(

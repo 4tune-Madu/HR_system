@@ -18,6 +18,7 @@ from django.utils.http import (
 from drf_spectacular.utils import (
     extend_schema,
     OpenApiResponse,
+    OpenApiParameter,
     OpenApiExample,
     inline_serializer,
 )
@@ -133,6 +134,24 @@ class MeView(APIView):
             status=status.HTTP_200_OK,
         )
 
+@extend_schema(
+    parameters=[
+        OpenApiParameter(
+            name="uidb64",
+            type=str,
+            location=OpenApiParameter.PATH,
+            required=True,
+            description="URL-safe encoded user ID.",
+        ),
+        OpenApiParameter(
+            name="token",
+            type=str,
+            location=OpenApiParameter.PATH,
+            required=True,
+            description="One-time password setup token.",
+        ),
+    ],
+)
 class SetPasswordView(APIView):
 
     permission_classes = [

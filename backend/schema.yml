@@ -4,6 +4,48 @@ info:
   version: 1.0.0
   description: API documentation for the HR Management System
 paths:
+  /api/auth/account/setup/{uidb64}/{token}/:
+    post:
+      operationId: set_password
+      description: Set the password for an invited account using a valid one-time
+        setup token.
+      summary: Set account password
+      parameters:
+      - in: path
+        name: token
+        schema:
+          type: string
+        description: One-time password setup token.
+        required: true
+      - in: path
+        name: uidb64
+        schema:
+          type: string
+        description: URL-safe encoded user ID.
+        required: true
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetPassword'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SetPassword'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SetPassword'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: Password successfully set.
+        '400':
+          description: Invalid or expired setup link.
   /api/auth/login/:
     post:
       operationId: auth_login_create
@@ -272,6 +314,119 @@ paths:
               schema:
                 $ref: '#/components/schemas/Employee'
           description: ''
+  /api/employees/organizations/{organization_id}/employees/{employee_id}/account/invite/:
+    post:
+      operationId: employee_account_invite
+      description: Send or resend the password setup invitation for an existing employee
+        account.
+      summary: Send employee account invitation
+      parameters:
+      - in: path
+        name: employee_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: organization_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Employee Accounts
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: Invitation sent successfully.
+        '400':
+          description: Employee account is not eligible for an invitation.
+        '404':
+          description: Employee not found.
+  /api/employees/organizations/{organization_id}/employees/{employee_id}/account/provision/:
+    post:
+      operationId: employee_account_provision
+      description: Create a user account for an existing employee, link the account
+        to the employee, create the organization membership, assign the requested
+        role, and require initial password setup.
+      summary: Provision employee account
+      parameters:
+      - in: path
+        name: employee_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: organization_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Employee Accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmployeeAccountProvision'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EmployeeAccountProvision'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EmployeeAccountProvision'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Employee'
+          description: ''
+        '400':
+          description: Account could not be provisioned.
+        '404':
+          description: Employee not found.
+  /api/employees/organizations/{organization_id}/employees/{employee_id}/activate/:
+    post:
+      operationId: employee_activate
+      description: Reactivate an inactive employee and restore their organization
+        membership and account access.
+      summary: Activate employee
+      parameters:
+      - in: path
+        name: employee_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: organization_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Employees
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Employee'
+          description: ''
+        '400':
+          description: Employee is already active or cannot be activated.
+        '404':
+          description: Employee not found.
   /api/employees/organizations/{organization_id}/employees/{employee_id}/documents/:
     get:
       operationId: employee_document_list
@@ -490,6 +645,735 @@ paths:
                 items:
                   $ref: '#/components/schemas/EmployeeDocument'
           description: ''
+  /api/leave/organizations/{organization_id}/employees/{employee_id}/leave/balances/:
+    get:
+      operationId: employee_leave_balance_list
+      description: List all leave balances for a specific employee within the organization.
+      summary: List employee leave balances
+      parameters:
+      - in: path
+        name: employee_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: organization_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Leave
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LeaveBalance'
+          description: ''
+  /api/leave/organizations/{organization_id}/leave/balances/:
+    get:
+      operationId: leave_balance_list
+      description: List leave balances for active employees within the organization.
+      summary: List organization leave balances
+      parameters:
+      - in: path
+        name: organization_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Leave
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LeaveBalance'
+          description: ''
+  /api/leave/organizations/{organization_id}/leave/balances/{balance_id}/:
+    get:
+      operationId: leave_balance_detail
+      summary: Get leave balance
+      parameters:
+      - in: path
+        name: balance_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: organization_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Leave
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaveBalance'
+          description: ''
+        '404':
+          description: Leave balance not found.
+  /api/leave/organizations/{organization_id}/leave/policies/:
+    get:
+      operationId: leave_policy_list
+      summary: List leave policies
+      parameters:
+      - in: path
+        name: organization_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Leave Administration
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LeavePolicy'
+          description: ''
+    post:
+      operationId: leave_policy_create
+      summary: Create leave policy
+      parameters:
+      - in: path
+        name: organization_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Leave Administration
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeavePolicyWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LeavePolicyWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LeavePolicyWrite'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeavePolicy'
+          description: ''
+        '400':
+          description: Invalid leave policy.
+  /api/leave/organizations/{organization_id}/leave/policies/{policy_id}/:
+    get:
+      operationId: leave_policy_detail
+      summary: Get leave policy
+      parameters:
+      - in: path
+        name: organization_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: policy_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Leave Administration
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeavePolicy'
+          description: ''
+    patch:
+      operationId: leave_policy_update
+      summary: Update leave policy
+      parameters:
+      - in: path
+        name: organization_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: policy_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Leave Administration
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedLeavePolicyWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedLeavePolicyWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedLeavePolicyWrite'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeavePolicy'
+          description: ''
+  /api/leave/organizations/{organization_id}/leave/policies/{policy_id}/activate/:
+    post:
+      operationId: leave_policy_activate
+      summary: Activate leave policy
+      parameters:
+      - in: path
+        name: organization_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: policy_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Leave Administration
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeavePolicy'
+          description: ''
+        '400':
+          description: Leave policy is already active or cannot be activated.
+        '404':
+          description: Leave policy not found.
+  /api/leave/organizations/{organization_id}/leave/policies/{policy_id}/deactivate/:
+    post:
+      operationId: leave_policy_deactivate
+      summary: Deactivate leave policy
+      parameters:
+      - in: path
+        name: organization_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: policy_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Leave Administration
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeavePolicy'
+          description: ''
+        '400':
+          description: Leave policy is already inactive or cannot be deactivated.
+        '404':
+          description: Leave policy not found.
+  /api/leave/organizations/{organization_id}/leave/requests/:
+    get:
+      operationId: leave_request_list
+      description: List leave requests belonging to the specified organization.
+      summary: List leave requests
+      parameters:
+      - in: path
+        name: organization_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Leave
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LeaveRequest'
+          description: ''
+    post:
+      operationId: leave_request_create
+      description: Create a draft leave request for the authenticated employee.
+      summary: Create leave request
+      parameters:
+      - in: path
+        name: organization_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Leave
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeaveRequestCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LeaveRequestCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LeaveRequestCreate'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaveRequest'
+          description: ''
+        '400':
+          description: Invalid leave request.
+  /api/leave/organizations/{organization_id}/leave/requests/{request_id}/:
+    get:
+      operationId: leave_request_detail
+      summary: Get leave request
+      parameters:
+      - in: path
+        name: organization_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: request_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Leave
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaveRequest'
+          description: ''
+  /api/leave/organizations/{organization_id}/leave/requests/{request_id}/approve/:
+    post:
+      operationId: leave_request_approve
+      summary: Approve leave request
+      parameters:
+      - in: path
+        name: organization_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: request_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Leave
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeaveRequestReview'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LeaveRequestReview'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LeaveRequestReview'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaveRequest'
+          description: ''
+  /api/leave/organizations/{organization_id}/leave/requests/{request_id}/cancel/:
+    post:
+      operationId: leave_request_cancel
+      summary: Cancel leave request
+      parameters:
+      - in: path
+        name: organization_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: request_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Leave
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaveRequest'
+          description: ''
+        '400':
+          description: Leave request cannot be cancelled.
+        '403':
+          description: The authenticated user does not own this leave request.
+        '404':
+          description: Leave request not found.
+  /api/leave/organizations/{organization_id}/leave/requests/{request_id}/reject/:
+    post:
+      operationId: leave_request_reject
+      summary: Reject leave request
+      parameters:
+      - in: path
+        name: organization_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: request_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Leave
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeaveRequestReview'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LeaveRequestReview'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LeaveRequestReview'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaveRequest'
+          description: ''
+  /api/leave/organizations/{organization_id}/leave/requests/{request_id}/submit/:
+    post:
+      operationId: leave_request_submit
+      description: Submit a draft leave request for approval.
+      summary: Submit leave request
+      parameters:
+      - in: path
+        name: organization_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: request_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Leave
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaveRequest'
+          description: ''
+        '400':
+          description: Leave request cannot be submitted.
+        '403':
+          description: The authenticated user does not own this leave request.
+        '404':
+          description: Leave request not found.
+  /api/leave/organizations/{organization_id}/leave/types/:
+    get:
+      operationId: leave_type_list
+      description: List leave types configured for the organization.
+      summary: List leave types
+      parameters:
+      - in: path
+        name: organization_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Leave Administration
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LeaveType'
+          description: ''
+    post:
+      operationId: leave_type_create
+      summary: Create leave type
+      parameters:
+      - in: path
+        name: organization_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Leave Administration
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeaveTypeWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LeaveTypeWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LeaveTypeWrite'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaveType'
+          description: ''
+        '400':
+          description: Invalid leave type.
+  /api/leave/organizations/{organization_id}/leave/types/{leave_type_id}/:
+    get:
+      operationId: leave_type_detail
+      summary: Get leave type
+      parameters:
+      - in: path
+        name: leave_type_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: organization_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Leave Administration
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaveType'
+          description: ''
+        '404':
+          description: Leave type not found.
+    patch:
+      operationId: leave_type_update
+      summary: Update leave type
+      parameters:
+      - in: path
+        name: leave_type_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: organization_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Leave Administration
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedLeaveTypeWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedLeaveTypeWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedLeaveTypeWrite'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaveType'
+          description: ''
+        '400':
+          description: Invalid leave type.
+        '404':
+          description: Leave type not found.
+  /api/leave/organizations/{organization_id}/leave/types/{leave_type_id}/activate/:
+    post:
+      operationId: leave_type_activate
+      summary: Activate leave type
+      parameters:
+      - in: path
+        name: leave_type_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: organization_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Leave Administration
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaveType'
+          description: ''
+        '400':
+          description: Leave type is already active or cannot be activated.
+        '404':
+          description: Leave type not found.
+  /api/leave/organizations/{organization_id}/leave/types/{leave_type_id}/deactivate/:
+    post:
+      operationId: leave_type_deactivate
+      summary: Deactivate leave type
+      parameters:
+      - in: path
+        name: leave_type_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: organization_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Leave Administration
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaveType'
+          description: ''
+        '400':
+          description: Leave type is already inactive or cannot be deactivated.
+        '404':
+          description: Leave type not found.
 components:
   schemas:
     ConfirmationStatusEnum:
@@ -629,6 +1513,12 @@ components:
       - next_of_kin
       - organization
       - updated_at
+    EmployeeAccountProvision:
+      type: object
+      properties:
+        role_code:
+          type: string
+          default: EMPLOYEE
     EmployeeAssignment:
       type: object
       properties:
@@ -969,6 +1859,339 @@ components:
         * `TEMPORARY` - Temporary
         * `INTERN` - Intern
         * `PART_TIME` - Part Time
+    LeaveBalance:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        employee:
+          type: string
+          format: uuid
+          readOnly: true
+        employee_name:
+          type: string
+          readOnly: true
+        leave_type:
+          type: string
+          format: uuid
+          readOnly: true
+        leave_type_name:
+          type: string
+          readOnly: true
+        year:
+          type: integer
+          readOnly: true
+        entitlement_days:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
+          readOnly: true
+        carry_forward_days:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
+          readOnly: true
+        used_days:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
+          readOnly: true
+        total_available_days:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
+          readOnly: true
+        remaining_days:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - carry_forward_days
+      - created_at
+      - employee
+      - employee_name
+      - entitlement_days
+      - id
+      - leave_type
+      - leave_type_name
+      - remaining_days
+      - total_available_days
+      - updated_at
+      - used_days
+      - year
+    LeavePolicy:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        organization:
+          type: string
+          format: uuid
+          readOnly: true
+        leave_type:
+          type: string
+          format: uuid
+        leave_type_name:
+          type: string
+          readOnly: true
+        days_per_year:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
+        minimum_days_per_request:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
+        maximum_days_per_request:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
+          nullable: true
+        allow_half_day:
+          type: boolean
+        allow_carry_forward:
+          type: boolean
+        maximum_carry_forward_days:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
+          nullable: true
+        requires_attachment:
+          type: boolean
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - days_per_year
+      - id
+      - leave_type
+      - leave_type_name
+      - organization
+      - updated_at
+    LeavePolicyWrite:
+      type: object
+      properties:
+        leave_type:
+          type: string
+          format: uuid
+        days_per_year:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
+        minimum_days_per_request:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
+          default: '0.00'
+        maximum_days_per_request:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
+          nullable: true
+        allow_half_day:
+          type: boolean
+          default: false
+        allow_carry_forward:
+          type: boolean
+          default: false
+        maximum_carry_forward_days:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
+          nullable: true
+        requires_attachment:
+          type: boolean
+          default: false
+      required:
+      - days_per_year
+      - leave_type
+    LeaveRequest:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        employee:
+          type: string
+          format: uuid
+          readOnly: true
+        employee_name:
+          type: string
+          readOnly: true
+        leave_type:
+          type: string
+          format: uuid
+        leave_type_name:
+          type: string
+          readOnly: true
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        requested_days:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
+          readOnly: true
+        reason:
+          type: string
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusEnum'
+          readOnly: true
+        submitted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        reviewed_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        reviewed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        review_comment:
+          type: string
+          readOnly: true
+        cancelled_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - cancelled_at
+      - created_at
+      - employee
+      - employee_name
+      - end_date
+      - id
+      - leave_type
+      - leave_type_name
+      - requested_days
+      - review_comment
+      - reviewed_at
+      - reviewed_by
+      - start_date
+      - status
+      - submitted_at
+      - updated_at
+    LeaveRequestCreate:
+      type: object
+      properties:
+        leave_type:
+          type: string
+          format: uuid
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        reason:
+          type: string
+      required:
+      - end_date
+      - leave_type
+      - start_date
+    LeaveRequestReview:
+      type: object
+      properties:
+        review_comment:
+          type: string
+    LeaveType:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        organization:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          maxLength: 50
+        name:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+        is_paid:
+          type: boolean
+        requires_approval:
+          type: boolean
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - code
+      - created_at
+      - id
+      - name
+      - organization
+      - updated_at
+    LeaveTypeWrite:
+      type: object
+      properties:
+        code:
+          type: string
+          maxLength: 50
+        name:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+        is_paid:
+          type: boolean
+          default: true
+        requires_approval:
+          type: boolean
+          default: true
+      required:
+      - code
+      - name
     Login:
       type: object
       properties:
@@ -1061,6 +2284,85 @@ components:
           $ref: '#/components/schemas/EmployeeAssignmentInput'
         employment:
           $ref: '#/components/schemas/EmploymentInput'
+    PatchedLeavePolicyWrite:
+      type: object
+      properties:
+        leave_type:
+          type: string
+          format: uuid
+        days_per_year:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
+        minimum_days_per_request:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
+          default: '0.00'
+        maximum_days_per_request:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
+          nullable: true
+        allow_half_day:
+          type: boolean
+          default: false
+        allow_carry_forward:
+          type: boolean
+          default: false
+        maximum_carry_forward_days:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
+          nullable: true
+        requires_attachment:
+          type: boolean
+          default: false
+    PatchedLeaveTypeWrite:
+      type: object
+      properties:
+        code:
+          type: string
+          maxLength: 50
+        name:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+        is_paid:
+          type: boolean
+          default: true
+        requires_approval:
+          type: boolean
+          default: true
+    SetPassword:
+      type: object
+      properties:
+        password:
+          type: string
+          writeOnly: true
+          minLength: 8
+        password_confirmation:
+          type: string
+          writeOnly: true
+          minLength: 8
+      required:
+      - password
+      - password_confirmation
+    StatusEnum:
+      enum:
+      - DRAFT
+      - SUBMITTED
+      - APPROVED
+      - REJECTED
+      - CANCELLED
+      type: string
+      description: |-
+        * `DRAFT` - Draft
+        * `SUBMITTED` - Submitted
+        * `APPROVED` - Approved
+        * `REJECTED` - Rejected
+        * `CANCELLED` - Cancelled
     TokenRefresh:
       type: object
       properties:
