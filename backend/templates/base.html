@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        {% block title %}
+            HR System
+        {% endblock %}
+    </title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f5f6f8;
+            color: #222;
+        }
+
+        .layout {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 240px;
+            background: #111;
+            color: white;
+            padding: 24px 16px;
+        }
+
+        .logo {
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 32px;
+        }
+
+        .nav-section {
+            margin-bottom: 24px;
+        }
+
+        .nav-title {
+            font-size: 12px;
+            color: #999;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .nav-link {
+            display: block;
+            padding: 10px 12px;
+            color: #ddd;
+            text-decoration: none;
+            border-radius: 6px;
+            margin-bottom: 4px;
+        }
+
+        .nav-link:hover {
+            background: #222;
+            color: white;
+        }
+
+        .main {
+            flex: 1;
+        }
+
+        .topbar {
+            height: 64px;
+            background: white;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 28px;
+        }
+
+        .content {
+            padding: 28px;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .page-title {
+            margin: 0;
+            font-size: 26px;
+        }
+
+        .card {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            text-align: left;
+            padding: 14px;
+            border-bottom: 1px solid #eee;
+        }
+
+        th {
+            font-size: 13px;
+            color: #666;
+        }
+
+        td {
+            font-size: 14px;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 4px 9px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+
+        .status-active {
+            background: #e7f7ed;
+            color: #16733b;
+        }
+
+        .status-inactive {
+            background: #fce8e8;
+            color: #a52828;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 40px;
+            color: #777;
+        }
+
+    </style>
+
+    {% block extra_css %}
+    {% endblock %}
+
+</head>
+
+<body>
+
+    <div class="layout">
+
+        <!-- Sidebar -->
+
+        <aside class="sidebar">
+
+            <div class="logo">
+                HR System
+            </div>
+
+            <div class="nav-section">
+
+                <div class="nav-title">
+                    Main
+                </div>
+
+                <a
+                    href="#"
+                    class="nav-link"
+                >
+                    Dashboard
+                </a>
+
+            </div>
+
+            <div class="nav-section">
+
+                <div class="nav-title">
+                    People
+                </div>
+
+                <a
+                    href="#"
+                    class="nav-link"
+                >
+                    Employees
+                </a>
+
+            </div>
+
+            <div class="nav-section">
+
+                <div class="nav-title">
+                    Management
+                </div>
+
+                <a
+                    href="#"
+                    class="nav-link"
+                >
+                    Leave
+                </a>
+
+                <a
+                    href="#"
+                    class="nav-link"
+                >
+                    Attendance
+                </a>
+
+                <a
+                    href="#"
+                    class="nav-link"
+                >
+                    Payroll
+                </a>
+
+            </div>
+
+        </aside>
+
+
+        <!-- Main -->
+
+        <main class="main">
+
+            <header class="topbar">
+
+                <div>
+                    HR Management
+                </div>
+
+                <div>
+                    {{ request.user.email }}
+                </div>
+
+            </header>
+
+
+            <section class="content">
+
+                {% block content %}
+                {% endblock %}
+
+            </section>
+
+        </main>
+
+    </div>
+
+    {% block extra_js %}
+    {% endblock %}
+
+</body>
+
+</html>

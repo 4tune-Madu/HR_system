@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+    Employees
+{% endblock %}
+
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+
+        <h1 class="page-title">
+            Employees
+        </h1>
+
+        <p>
+            Manage employees in this organization.
+        </p>
+
+    </div>
+
+</div>
+
+
+<div class="card">
+
+    <table>
+
+        <thead>
+
+            <tr>
+
+                <th>
+                    Employee Number
+                </th>
+
+                <th>
+                    Name
+                </th>
+
+                <th>
+                    Email
+                </th>
+
+                <th>
+                    Department
+                </th>
+
+                <th>
+                    Position
+                </th>
+
+                <th>
+                    Status
+                </th>
+
+            </tr>
+
+        </thead>
+
+
+        <tbody>
+
+            {% for employee in employees %}
+
+                <tr>
+
+                    <td>
+    <a href="{% url 'employee:detail' organization_id=organization.id employee_id=employee.id %}">
+        {{ employee.employee_number }}
+    </a>
+</td>
+
+                    <td>
+                        {{ employee.identity.first_name }}
+                        {{ employee.identity.last_name }}
+                    </td>
+
+                    <td>
+                        {{ employee.contact.company_email }}
+                    </td>
+
+                    <td>
+
+                        {% if employee.assignment.department %}
+
+                            {{ employee.assignment.department.name }}
+
+                        {% else %}
+
+                            —
+
+                        {% endif %}
+
+                    </td>
+
+                    <td>
+
+                        {% if employee.assignment.position %}
+
+                            {{ employee.assignment.position.title }}
+
+                        {% else %}
+
+                            —
+
+                        {% endif %}
+
+                    </td>
+
+                    <td>
+
+                        {% if employee.is_active %}
+
+                            <span class="status status-active">
+                                Active
+                            </span>
+
+                        {% else %}
+
+                            <span class="status status-inactive">
+                                Inactive
+                            </span>
+
+                        {% endif %}
+
+                    </td>
+
+                </tr>
+
+            {% empty %}
+
+                <tr>
+
+                    <td
+                        colspan="6"
+                        class="empty"
+                    >
+                        No employees found.
+                    </td>
+
+                </tr>
+
+            {% endfor %}
+
+        </tbody>
+
+    </table>
+
+</div>
+
+{% endblock %}

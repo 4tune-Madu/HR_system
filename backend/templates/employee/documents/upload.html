@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Upload Document
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+
+        <a
+            href="{% url 'employee:document-list' organization_id=organization.id employee_id=employee.id %}"
+        >
+            Back to Documents
+        </a>
+
+        <h1 class="page-title">
+            Upload Document
+        </h1>
+
+        <p>
+            {{ employee.identity.first_name }}
+            {{ employee.identity.last_name }}
+            —
+            {{ employee.employee_number }}
+        </p>
+
+    </div>
+
+</div>
+
+
+<div class="card">
+
+    <form
+        method="post"
+        enctype="multipart/form-data"
+    >
+
+        {% csrf_token %}
+
+        {{ form.non_field_errors }}
+
+        <div>
+            {{ form.document_type.label_tag }}
+            {{ form.document_type }}
+            {{ form.document_type.errors }}
+        </div>
+
+        <br>
+
+        <div>
+            {{ form.name.label_tag }}
+            {{ form.name }}
+            {{ form.name.errors }}
+        </div>
+
+        <br>
+
+        <div>
+            {{ form.file.label_tag }}
+            {{ form.file }}
+            {{ form.file.errors }}
+        </div>
+
+        <br>
+
+        <div>
+            {{ form.description.label_tag }}
+            {{ form.description }}
+            {{ form.description.errors }}
+        </div>
+
+        <br>
+
+        <div>
+            {{ form.issue_date.label_tag }}
+            {{ form.issue_date }}
+            {{ form.issue_date.errors }}
+        </div>
+
+        <br>
+
+        <div>
+            {{ form.expiry_date.label_tag }}
+            {{ form.expiry_date }}
+            {{ form.expiry_date.errors }}
+        </div>
+
+        <br>
+
+        <button type="submit">
+            Upload Document
+        </button>
+
+        <a
+            href="{% url 'employee:document-list' organization_id=organization.id employee_id=employee.id %}"
+        >
+            Cancel
+        </a>
+
+    </form>
+
+</div>
+
+{% endblock %}

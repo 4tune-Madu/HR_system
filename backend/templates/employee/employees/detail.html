@@ -1,0 +1,363 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+    {{ employee.identity.first_name }}
+    {{ employee.identity.last_name }}
+{% endblock %}
+
+
+{% block content %}
+
+<div class="page-header">
+    <div>
+
+    <a
+        href="{% url 'employee:edit' organization_id=organization.id employee_id=employee.id %}"
+    >
+        Edit Employee
+    </a>
+
+</div>
+    <div>
+
+        <h1 class="page-title">
+
+            {{ employee.identity.first_name }}
+            {{ employee.identity.last_name }}
+
+        </h1>
+
+        <p>
+            {{ employee.employee_number }}
+        </p>
+
+    </div>
+
+
+    <div>
+
+        {% if employee.is_active %}
+
+            <span class="status status-active">
+                Active
+            </span>
+
+        {% else %}
+
+            <span class="status status-inactive">
+                Inactive
+            </span>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+
+<!-- Identity -->
+
+<div class="card">
+
+    <h2>
+        Personal Information
+    </h2>
+
+    <table>
+
+        <tr>
+            <th>First Name</th>
+            <td>
+                {{ employee.identity.first_name }}
+            </td>
+        </tr>
+
+        <tr>
+            <th>Middle Name</th>
+            <td>
+                {{ employee.identity.middle_name|default:"—" }}
+            </td>
+        </tr>
+
+        <tr>
+            <th>Last Name</th>
+            <td>
+                {{ employee.identity.last_name }}
+            </td>
+        </tr>
+
+        <tr>
+            <th>Date of Birth</th>
+            <td>
+                {{ employee.identity.date_of_birth|default:"—" }}
+            </td>
+        </tr>
+
+        <tr>
+            <th>Gender</th>
+            <td>
+                {{ employee.identity.gender|default:"—" }}
+            </td>
+        </tr>
+
+    </table>
+
+</div>
+
+
+<br>
+
+
+<!-- Contact -->
+
+<div class="card">
+
+    <h2>
+        Contact Information
+    </h2>
+
+    <table>
+
+        <tr>
+            <th>Company Email</th>
+            <td>
+                {{ employee.contact.company_email|default:"—" }}
+            </td>
+        </tr>
+
+        <tr>
+            <th>Personal Email</th>
+            <td>
+                {{ employee.contact.personal_email|default:"—" }}
+            </td>
+        </tr>
+
+        <tr>
+            <th>Phone Number</th>
+            <td>
+                {{ employee.contact.phone_number|default:"—" }}
+            </td>
+        </tr>
+
+        <tr>
+            <th>Address</th>
+            <td>
+                {{ employee.contact.address|default:"—" }}
+            </td>
+        </tr>
+
+    </table>
+
+</div>
+
+
+<br>
+
+
+<!-- Assignment -->
+
+<div class="card">
+
+    <h2>
+        Organizational Assignment
+    </h2>
+
+    <table>
+
+        <tr>
+            <th>Department</th>
+            <td>
+
+                {% if employee.assignment.department %}
+                    {{ employee.assignment.department.name }}
+                {% else %}
+                    —
+                {% endif %}
+
+            </td>
+        </tr>
+
+        <tr>
+            <th>Position</th>
+            <td>
+
+                {% if employee.assignment.position %}
+                    {{ employee.assignment.position.title }}
+                {% else %}
+                    —
+                {% endif %}
+
+            </td>
+        </tr>
+
+        <tr>
+            <th>Job Grade</th>
+            <td>
+
+                {% if employee.assignment.job_grade %}
+                    {{ employee.assignment.job_grade.name }}
+                {% else %}
+                    —
+                {% endif %}
+
+            </td>
+        </tr>
+
+        <tr>
+            <th>Team</th>
+            <td>
+
+                {% if employee.assignment.team %}
+                    {{ employee.assignment.team.name }}
+                {% else %}
+                    —
+                {% endif %}
+
+            </td>
+        </tr>
+
+        <tr>
+            <th>Branch</th>
+            <td>
+
+                {% if employee.assignment.branch %}
+                    {{ employee.assignment.branch.name }}
+                {% else %}
+                    —
+                {% endif %}
+
+            </td>
+        </tr>
+
+    </table>
+
+</div>
+
+
+<br>
+
+
+<!-- Employment -->
+
+<div class="card">
+
+    <h2>
+        Employment
+    </h2>
+
+    <table>
+
+        <tr>
+            <th>Employment Type</th>
+            <td>
+                {{ employee.employment.employment_type|default:"—" }}
+            </td>
+        </tr>
+
+        <tr>
+            <th>Employment Status</th>
+            <td>
+                {{ employee.employment.employment_status|default:"—" }}
+            </td>
+        </tr>
+
+        <tr>
+            <th>Offer Date</th>
+            <td>
+                {{ employee.employment.offer_date|default:"—" }}
+            </td>
+        </tr>
+
+        <tr>
+            <th>Employment Start Date</th>
+            <td>
+                {{ employee.employment.employment_start_date|default:"—" }}
+            </td>
+        </tr>
+
+        <tr>
+            <th>Confirmation Status</th>
+            <td>
+                {{ employee.employment.confirmation_status|default:"—" }}
+            </td>
+        </tr>
+
+    </table>
+
+</div>
+
+
+<br>
+
+
+<!-- Documents -->
+
+<div class="section-header">
+
+        <h2>
+            Documents
+        </h2>
+
+        <a href="{% url 'employee:document-list' organization_id=organization.id employee_id=employee.id %}">
+            View All
+        </a>
+
+    </div>
+
+    {% if employee.documents.all %}
+
+        <table>
+
+            <thead>
+
+                <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Issue Date</th>
+                    <th>Expiry Date</th>
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+                {% for document in employee.documents.all %}
+
+                    <tr>
+
+                        <td>
+                            {{ document.name }}
+                        </td>
+
+                        <td>
+                            {{ document.get_document_type_display }}
+                        </td>
+
+                        <td>
+                            {{ document.issue_date|default:"—" }}
+                        </td>
+
+                        <td>
+                            {{ document.expiry_date|default:"—" }}
+                        </td>
+
+                    </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    {% else %}
+
+        <div class="empty">
+            No documents uploaded.
+        </div>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}
