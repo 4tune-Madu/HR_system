@@ -51,6 +51,16 @@ PERMISSIONS = [
         "name": "Upload Employee Documents",
         "description": "Allows uploading employee documents.",
     },
+    {
+        "code": "employee.document.archive",
+        "name": "Archive Employee Documents",
+        "description": "Allows archiving employee documents.",
+    },
+    {
+        "code": "employee.document.restore",
+        "name": "Restore Employee Documents",
+        "description": "Allows restoring archived employee documents.",
+    },
 
     {
         "code": "leave.view",
