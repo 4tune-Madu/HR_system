@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>System Admin Dashboard | BT Technologies</title>
+</head>
+<body>
+    <h1>System Admin Dashboard</h1>
+
+    <p>
+        Welcome,
+        {{ user.first_name }}
+        {{ user.last_name }}
+    </p>
+
+    <p>
+        Logged in as:
+        {{ user.email }}
+    </p>
+
+    <p>
+        You are viewing the platform administration view for BT Technologies.
+    </p>
+
+    <form action="{% url 'logout' %}" method="post">
+    {% csrf_token %}
+    <button type="submit">
+        Logout
+    </button>
+    </form>
+</body>
+</html>

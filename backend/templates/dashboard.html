@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <title>HR Admin Dashboard | BT Technologies</title>
+</head>
+
+<body>
+
+    <h1>HR Admin Dashboard</h1>
+
+    <p>
+        Welcome,
+        {{ request.user.first_name }}
+        {{ request.user.last_name }}
+    </p>
+
+    <p>
+        Logged in as:
+        {{ request.user.email }}
+    </p>
+
+    <p>
+        You are viewing the human resources administration view for BT Technologies.
+    </p>
+
+    <form action="{% url 'logout' %}" method="post">
+    {% csrf_token %}
+    <button type="submit">
+        Logout
+    </button>
+</form>
+
+
+</body>
+</html>
