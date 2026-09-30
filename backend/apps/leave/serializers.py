@@ -702,6 +702,7 @@ class EmployeeWorkScheduleSerializer(
             "updated_at",
         ]
 
+    @extend_schema_field(str)
     def get_employee_name(self, obj):
 
         identity = getattr(
@@ -768,6 +769,7 @@ class LeaveEntitlementSerializer(
             "updated_at",
         ]
 
+    @extend_schema_field(str)
     def get_employee_name(self, obj):
 
         identity = getattr(

@@ -28,6 +28,13 @@ ROLE_PERMISSIONS = {
         "payroll.process",
         "payroll.approve",
         "payroll.view_own",
+
+        "attendance.device.manage",
+        "attendance.device.view",
+
+        "attendance.settings.manage",
+        "attendance.manual.manage",
+        "attendance.reconciliation.manage",
     ],
 
 
@@ -55,6 +62,11 @@ ROLE_PERMISSIONS = {
         "payroll.view",
         "payroll.view_own",
 
+        "attendance.device.manage",
+        "attendance.device.view",
+
+        "attendance.manual.manage",
+        "attendance.reconciliation.manage",
     ],
 
     "HR_OFFICER": [
@@ -73,6 +85,11 @@ ROLE_PERMISSIONS = {
         "leave.request",
 
         "attendance.view",
+
+        "attendance.device.manage",
+        "attendance.device.view",
+        "attendance.manual.manage",
+        "attendance.reconciliation.manage",
     ],
 
     "PAYROLL_ADMIN": [

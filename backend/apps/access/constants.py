@@ -94,4 +94,21 @@ PERMISSIONS = [
         "name": "View Own Payroll",
         "description": "Allows an employee to view their own payroll information.",
     },
+    {
+        "code": "attendance.device.view",
+        "name": "View Attendance Devices",
+        "description": (
+            "Allows viewing attendance devices, "
+            "device users, and employee mappings."
+        ),
+    },
+    {
+        "code": "attendance.device.manage",
+        "name": "Manage Attendance Devices",
+        "description": (
+            "Allows registering, updating, activating, "
+            "deactivating, and managing attendance device "
+            "employee mappings."
+        ),
+    },
 ]

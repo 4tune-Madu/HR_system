@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'apps.authentication',
     'apps.access',
     'apps.leave',
+    'apps.attendance',
 
     # Third Party
     'rest_framework',
@@ -154,6 +155,12 @@ REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": (
         "drf_spectacular.openapi.AutoSchema"
     ),
+
+    "DEFAULT_PAGINATION_CLASS": (
+        "rest_framework.pagination.PageNumberPagination"
+    ),
+
+    "PAGE_SIZE": 20,
 }
 
 SPECTACULAR_SETTINGS = {
@@ -222,6 +229,9 @@ CELERY_TIMEZONE = TIME_ZONE
 CELERY_ENABLE_UTC = True
 
 CELERY_BEAT_SCHEDULE = {
+
+    # Leave Schedules
+    
     "monthly-leave-accrual": {
         "task": (
             "apps.leave.tasks."
@@ -268,5 +278,45 @@ CELERY_BEAT_SCHEDULE = {
             hour=2,
             minute=0,
         ),
+    },
+
+    # Attendance Schedules
+
+    "attendance-sync-morning": {
+        "task": (
+            "apps.attendance.tasks."
+            "synchronize_attendance_devices"
+        ),
+        "schedule": crontab(
+            hour=9,
+            minute=0,
+        ),
+    },
+
+    "attendance-sync-noon": {
+        "task": (
+            "apps.attendance.tasks."
+            "synchronize_attendance_devices"
+        ),
+        "schedule": crontab(
+            hour=12,
+            minute=0,
+        ),
+    },
+
+    "attendance-sync-evening": {
+        "task": (
+            "apps.attendance.tasks."
+            "synchronize_attendance_devices"
+        ),
+        "schedule": crontab(
+            hour=17,
+            minute=0,
+        ),
+    },
+
+    "attendance-reconciliation-nightly": {
+        "task": "apps.attendance.tasks.reconcile_open_attendance_records",
+        "schedule": crontab(hour=23, minute=0),
     },
 }

@@ -39,6 +39,16 @@ urlpatterns = [
         include("apps.leave.urls"),
     ),
 
+    path(
+        "api/attendance/",
+        include("apps.attendance.urls"),
+    ),
+
+    path(
+        "api/organization/",
+        include("apps.organization.urls"),
+    ),
+
     # API documentation
 
     path(

@@ -153,3 +153,41 @@ class CanManageLeave(
     HasOrganizationPermission
 ):
     required_permission = "leave.manage"
+
+class CanViewAttendanceDevices(
+    HasOrganizationPermission
+):
+    required_permission = "attendance.device.view"
+
+
+class CanManageAttendanceDevices(
+    HasOrganizationPermission
+):
+    required_permission = "attendance.device.manage"
+
+
+class CanManageAttendanceSettings(
+    HasOrganizationPermission
+):
+    required_permission = (
+        "attendance.settings.manage"
+    )
+
+class CanViewAttendanceRecords(
+    HasOrganizationPermission
+):
+    required_permission = "attendance.view"
+
+class CanManageManualAttendance(
+    HasOrganizationPermission
+):
+    required_permission = (
+        "attendance.manual.manage"
+    )
+
+class CanManageAttendanceReconciliation(
+    HasOrganizationPermission
+):
+    required_permission = (
+        "attendance.reconciliation.manage"
+    )

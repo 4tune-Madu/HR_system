@@ -736,6 +736,74 @@ class EmployeeWorkSchedule(models.Model):
                 }
             )
 
+class WorkScheduleDay(models.Model):
+
+    class DayOfWeek(models.IntegerChoices):
+        MONDAY = 0, "Monday"
+        TUESDAY = 1, "Tuesday"
+        WEDNESDAY = 2, "Wednesday"
+        THURSDAY = 3, "Thursday"
+        FRIDAY = 4, "Friday"
+        SATURDAY = 5, "Saturday"
+        SUNDAY = 6, "Sunday"
+
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+    )
+
+    work_schedule = models.ForeignKey(
+        WorkSchedule,
+        on_delete=models.CASCADE,
+        related_name="schedule_days",
+    )
+
+    day_of_week = models.PositiveSmallIntegerField(
+        choices=DayOfWeek.choices,
+    )
+
+    start_time = models.TimeField()
+
+    end_time = models.TimeField()
+
+    grace_period_minutes = models.PositiveIntegerField(
+        default=0,
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True,
+    )
+
+    class Meta:
+
+        constraints = [
+            models.UniqueConstraint(
+                fields=[
+                    "work_schedule",
+                    "day_of_week",
+                ],
+                name=(
+                    "unique_work_schedule_day"
+                ),
+            ),
+        ]
+
+        ordering = [
+            "day_of_week",
+        ]
+
+    def __str__(self):
+        return (
+            f"{self.work_schedule.name} - "
+            f"{self.get_day_of_week_display()}"
+        )
+
+
 
 class LeaveEntitlement(models.Model):
 
