@@ -47,6 +47,10 @@ class Organization(models.Model):
         auto_now=True,
     )
 
+    automatic_attendance_checkout_enabled = models.BooleanField(
+        default=True,
+    )
+
     class Meta:
         ordering = ["name"]
 

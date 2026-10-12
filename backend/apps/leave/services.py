@@ -11,6 +11,7 @@ from .models import (
     LeaveEntitlement,
     LeaveBalanceAdjustment,
     LeaveAccrual,
+    WorkScheduleDay,
 )
 from apps.access.models import OrganizationMembership
 from decimal import Decimal
@@ -1790,6 +1791,68 @@ class WorkScheduleService:
 
         return schedule
 
+    
+    @staticmethod
+    def get_employee_schedule(
+        employee,
+        attendance_date,
+    ):
+    
+        return (
+            EmployeeWorkSchedule.objects
+            .select_related(
+                "work_schedule",
+            )
+            .filter(
+                employee=employee,
+                is_active=True,
+                effective_from__lte=attendance_date,
+            )
+            .filter(
+                Q(
+                    effective_to__isnull=True
+                )
+                |
+                Q(
+                    effective_to__gte=attendance_date
+                )
+            )
+            .order_by(
+                "-effective_from"
+            )
+            .first()
+        )
+    
+    @staticmethod
+    def get_schedule_day(
+        employee,
+        attendance_date: date,
+    ):
+
+        assignment = (
+            WorkScheduleService
+            .get_employee_schedule(
+                employee=employee,
+                attendance_date=attendance_date,
+            )
+        )
+
+        if assignment is None:
+            return None
+
+        weekday = attendance_date.weekday()
+
+        return (
+            WorkScheduleDay.objects
+            .filter(
+                work_schedule=assignment.work_schedule,
+                day_of_week=weekday,
+            )
+            .first()
+        )
+
+
+
 
 class PublicHolidayService:
 
@@ -3377,3 +3440,4 @@ class LeaveApprovalService:
         )
 
         return step
+
