@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Edit Employee
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+
+        <a
+            href="{% url 'employee:detail' organization_id=organization.id employee_id=employee.id %}"
+        >
+            Back to Employee
+        </a>
+
+        <h1 class="page-title">
+            Edit Employee
+        </h1>
+
+        <p>
+            {{ employee.identity.first_name }}
+            {{ employee.identity.last_name }}
+            —
+            {{ employee.employee_number }}
+        </p>
+
+    </div>
+
+</div>
+
+
+<form method="post">
+
+    {% csrf_token %}
+
+    <div class="card">
+
+        <h2>
+            Personal Information
+        </h2>
+
+        {{ identity_form.non_field_errors }}
+
+        {{ identity_form.as_p }}
+
+    </div>
+
+    <br>
+
+    <div class="card">
+
+        <h2>
+            Contact Information
+        </h2>
+
+        {{ contact_form.non_field_errors }}
+
+        {{ contact_form.as_p }}
+
+    </div>
+
+    <br>
+
+    <div class="card">
+
+        <h2>
+            Employment
+        </h2>
+
+        {{ employment_form.non_field_errors }}
+
+        {{ employment_form.as_p }}
+
+    </div>
+
+    <br>
+
+    <button type="submit">
+        Save Changes
+    </button>
+
+    <a
+        href="{% url 'employee:detail' organization_id=organization.id employee_id=employee.id %}"
+    >
+        Cancel
+    </a>
+
+</form>
+
+{% endblock %}

@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+    Employee Documents
+{% endblock %}
+
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+
+        <h1>
+            Documents
+        </h1>
+
+        <p>
+            {{ employee.identity.first_name }}
+            {{ employee.identity.last_name }}
+
+            —
+            {{ employee.employee_number }}
+        </p>
+
+    </div>
+
+
+    <div>
+
+        <div>
+
+    <a
+        href="{% url 'employee:document-upload' organization_id=organization.id employee_id=employee.id %}"
+    >
+        Upload Document
+    </a>
+
+    <a
+        href="{% url 'employee:document-archived' organization_id=organization.id employee_id=employee.id %}"
+    >
+        Archived Documents
+    </a>
+
+</div>
+
+    </div>
+
+</div>
+
+
+<div class="card">
+
+    {% if documents %}
+
+        <table>
+
+            <thead>
+
+                <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Issue Date</th>
+                    <th>Expiry Date</th>
+                    <th>Uploaded</th>
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+                {% for document in documents %}
+
+                    <tr>
+
+                        <td>
+                            {{ document.name }}
+                        </td>
+
+                        <td>
+                            {{ document.get_document_type_display }}
+                        </td>
+
+                        <td>
+                            {{ document.issue_date|default:"—" }}
+                        </td>
+
+                        <td>
+                            {{ document.expiry_date|default:"—" }}
+                        </td>
+
+                        <td>
+                            {{ document.created_at|date:"d M Y" }}
+                        </td>
+
+                    </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    {% else %}
+
+        <p>
+            This employee has no active documents.
+        </p>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

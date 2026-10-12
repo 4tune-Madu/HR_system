@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <title>Dashboard | HR System</title>
+</head>
+
+<body>
+
+    <h1>HR System Dashboard</h1>
+
+    <p>
+        Welcome,
+        {{ request.user.first_name }}
+        {{ request.user.last_name }}
+    </p>
+
+    <p>
+        Logged in as:
+        {{ request.user.email }}
+    </p>
+
+    <form action="{% url 'logout' %}" method="post">
+    {% csrf_token %}
+    <button type="submit">
+        Logout
+    </button>
+</form>
+
+
+</body>
+</html>
