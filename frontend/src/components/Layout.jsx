@@ -1,36 +1,33 @@
 import React from 'react';
 import {NavLink, Outlet, useNavigate} from 'react-router-dom';
-import {LayoutDashboard, Users, Building2, FileText, Settings, LogOut, Menu, CalendarDays, Banknote, UserPlus, Clock3} from 'lucide-react';
+import {LayoutDashboard, Users, Building2, FileText, Settings, LogOut, Menu, CalendarDays, Banknote, Clock3, UserRound} from 'lucide-react';
 import {useAuth} from '../context/AuthContext';
+import logo from '../../images/BTLogo.png';
 
 export default function Layout(){
   const {user,logout}=useAuth();
   const nav=useNavigate();
   const [open,setOpen]=React.useState(false);
+  const membership = user?.memberships?.find((item) => item.organization_id === import.meta.env.VITE_ORGANIZATION_ID);
+  const permissions = membership?.permissions || [];
+  const has = (permission) => user?.is_system_admin || permissions.includes(permission);
+  const isEmployee = !user?.is_system_admin && !user?.is_hr_admin && !has('employee.view');
 
-  const items = user?.is_system_admin
-    ? [
+  const items = [
         ['/dashboard','Dashboard',LayoutDashboard],
-        ['/employees','Employees',Users],
-        ['/organization','Organization',Building2],
-        ['/documents','Documents',FileText],
-        ['/settings','Settings',Settings],
-      ]
-    : [
-        ['/dashboard','Dashboard',LayoutDashboard],
-        ['/employees','Employees',Users],
-        ['/leave-management','Leave Management',CalendarDays],
-        [null,'Payroll',Banknote,true],
-        [null,'Onboarding',UserPlus,true],
-        [null,'Attendance',Clock3,true],
-        ['/documents','Documents',FileText],
-        ['/settings','Settings',Settings],
+        ...(has('employee.view') ? [['/employees','Employees',Users]] : []),
+        ...(has('leave.view') ? [['/leave-management','Leave Management',CalendarDays]] : []),
+        ...(has('payroll.view') || has('payroll.view_own') ? [['/payroll','Payroll',Banknote]] : []),
+        ...(has('attendance.view') || isEmployee ? [['/attendance', isEmployee ? 'My Attendance' : 'Attendance', Clock3]] : []),
+        ...(has('employee.document.view') ? [['/documents','Documents',FileText]] : []),
+        ...(has('organization.structure.manage') ? [['/organization','Organization',Building2]] : []),
+        ...(isEmployee ? [['/profile','My Profile',UserRound]] : [['/settings','Settings',Settings]]),
       ];
 
   return <div className="app-shell">
     <aside className={open?'sidebar open':'sidebar'}>
       <div className="brand">
-        <span>BT</span>
+        <img src={logo} alt="BT Technologies logo" />
         <div>
           <strong>BT Technologies</strong>
           <small>{user?.is_system_admin ? 'System administration' : 'People & Workforce'}</small>

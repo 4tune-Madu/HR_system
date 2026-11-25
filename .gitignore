@@ -17,6 +17,7 @@ staticfiles/
 # Environment variables
 .env
 .env.*
+!.env.example
 
 # IDE
 .vscode/
@@ -32,6 +33,7 @@ dist/
 build/
 
 # Testing / coverage
+.local-qa/
 .coverage
 htmlcov/
 .pytest_cache/

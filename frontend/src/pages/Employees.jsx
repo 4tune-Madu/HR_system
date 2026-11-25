@@ -13,10 +13,12 @@ export default function Employees() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const {user} = useAuth();
-  const role = user?.role_code;
-  const canCreate = user?.is_system_admin || ['ORGANIZATION_ADMIN', 'HR_MANAGER', 'HR_OFFICER'].includes(role);
-  const canDeactivate = user?.is_system_admin || ['ORGANIZATION_ADMIN', 'HR_MANAGER'].includes(role);
-  const canActivate = user?.is_system_admin || role === 'ORGANIZATION_ADMIN';
+  const membership = user?.memberships?.find((item) => item.organization_id === import.meta.env.VITE_ORGANIZATION_ID);
+  const permissions = membership?.permissions || [];
+  const has = (permission) => user?.is_system_admin || permissions.includes(permission);
+  const canCreate = has('employee.create');
+  const canDeactivate = has('employee.deactivate');
+  const canActivate = has('employee.activate');
 
   const loadEmployees = async () => {
     setError('');

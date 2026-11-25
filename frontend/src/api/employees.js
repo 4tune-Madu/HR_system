@@ -15,6 +15,7 @@ export const activateEmployee = employeeId => api(`${base()}/${employeeId}/activ
 export const listDocuments = employeeId => api(`${base()}/${employeeId}/documents/`);
 export const getArchivedDocuments = employeeId => api(`${base()}/${employeeId}/documents/archived/`);
 export const getEmployeeDocument = (employeeId, documentId) => api(`${base()}/${employeeId}/documents/${documentId}/`);
+export const downloadEmployeeDocument = (employeeId, documentId) => api(`${base()}/${employeeId}/documents/${documentId}/download/`, {responseType: 'blob'});
 export const uploadDocument = (employeeId, formData) => api(`${base()}/${employeeId}/documents/`, {method: 'POST', body: formData});
 export const archiveDocument = (employeeId, documentId) => api(`${base()}/${employeeId}/documents/${documentId}/`, {method: 'DELETE'});
 export const restoreDocument = (employeeId, documentId) => api(`${base()}/${employeeId}/documents/${documentId}/restore/`, {method: 'POST'});

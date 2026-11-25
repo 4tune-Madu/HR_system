@@ -13,13 +13,15 @@ export default function EmployeeDetails() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
-  const role = user?.role_code;
-  const isSystemAdmin = user?.is_system_admin;
-  const canEdit = isSystemAdmin || ['ORGANIZATION_ADMIN', 'HR_MANAGER', 'HR_OFFICER'].includes(role);
-  const canDeactivate = isSystemAdmin || ['ORGANIZATION_ADMIN', 'HR_MANAGER'].includes(role);
-  const canActivate = isSystemAdmin || role === 'ORGANIZATION_ADMIN';
-  const canProvision = isSystemAdmin || ['ORGANIZATION_ADMIN', 'HR_MANAGER', 'HR_OFFICER'].includes(role);
-  const canInvite = isSystemAdmin || role === 'ORGANIZATION_ADMIN';
+  const membership = user?.memberships?.find((item) => item.organization_id === import.meta.env.VITE_ORGANIZATION_ID);
+  const permissions = membership?.permissions || [];
+  const has = (permission) => user?.is_system_admin || permissions.includes(permission);
+  const canEdit = has('employee.update');
+  const canDeactivate = has('employee.deactivate');
+  const canActivate = has('employee.activate');
+  const canProvision = has('employee.account.provision');
+  const canInvite = has('employee.account.invite');
+  const canViewDocuments = has('employee.document.view');
 
   const loadEmployee = useCallback(async () => {
     setError('');
@@ -64,7 +66,7 @@ export default function EmployeeDetails() {
       <div className="profile-actions">
         <span className={employee.is_active ? 'status active' : 'status inactive'}>{employee.is_active ? 'Active' : 'Inactive'}</span>
         {canEdit && <Link className="link-button" to={`/employees/${id}/edit`}><Edit3 size={16}/> Edit</Link>}
-        <Link className="link-button" to={`/employees/${id}/documents`}><FileText size={16}/> Documents</Link>
+        {canViewDocuments && <Link className="link-button" to={`/employees/${id}/documents`}><FileText size={16}/> Documents</Link>}
         {employee.is_active && canDeactivate && <button className="link-button" type="button" disabled={busy} onClick={() => window.confirm(`Deactivate ${displayName(employee)}?`) && runAction(() => deactivateEmployee(id), 'Employee deactivated.')}><UserX size={16}/> Deactivate</button>}
         {!employee.is_active && canActivate && <button className="link-button" type="button" disabled={busy} onClick={() => runAction(() => activateEmployee(id), 'Employee activated.')}><UserCheck size={16}/> Activate</button>}
       </div>
@@ -79,10 +81,11 @@ export default function EmployeeDetails() {
       </div>
     </section>
     <div className="detail-grid">
-      <InfoCard title="Contact"><Info icon={Mail} label="Company email" value={contact.company_email}/><Info icon={Mail} label="Personal email" value={contact.personal_email}/><Info icon={Phone} label="Phone" value={contact.phone_number}/><Info icon={MapPin} label="Address" value={contact.address}/></InfoCard>
+      <InfoCard title="Contact"><Info icon={Mail} label="Company email" value={contact.company_email}/><Info icon={Mail} label="Personal email" value={contact.personal_email}/><Info icon={Phone} label="Phone" value={contact.phone_number}/><Info icon={Phone} label="Other number" value={contact.other_phone_number}/><Info icon={Phone} label="CUG number" value={contact.cug_phone_number}/><Info icon={MapPin} label="Address" value={contact.address}/></InfoCard>
+      <InfoCard title="Next of kin">{employee.next_of_kin?.length ? employee.next_of_kin.map(kin => <div key={kin.id}><Info label={kin.is_primary ? 'Primary contact' : 'Full name'} value={kin.full_name}/><Info label="Relationship" value={kin.relationship}/><Info icon={Phone} label="Phone" value={kin.phone_number}/><Info icon={Mail} label="Email" value={kin.email}/><Info icon={MapPin} label="Address" value={kin.address}/></div>) : <p>No next of kin added.</p>}</InfoCard>
       <InfoCard title="Identity"><Info label="Employee number" value={employee.employee_number}/><Info label="Date of birth" value={identity.date_of_birth}/><Info label="Gender" value={identity.gender}/></InfoCard>
-      <InfoCard title="Employment"><Info label="Type" value={employment.employment_type}/><Info label="Status" value={employment.employment_status}/><Info label="Offer date" value={employment.offer_date}/><Info label="Start date" value={employment.employment_start_date}/><Info label="Probation end" value={employment.probation_end_date}/><Info label="Confirmation" value={employment.confirmation_status}/><Info label="Date left" value={employment.date_left}/></InfoCard>
-      <InfoCard title="Assignment"><Info label="Branch" value={assignment.branch_name}/><Info label="Department" value={assignment.department_name}/><Info label="Team" value={assignment.team_name}/><Info label="Position" value={assignment.position_name}/><Info label="Job grade" value={assignment.job_grade_name}/><Info label="Manager ID" value={assignment.manager}/></InfoCard>
+      <InfoCard title="Employment"><Info label="Type" value={employment.employment_type}/><Info label="Status" value={employment.employment_status}/><Info label="Resumption date" value={employment.employment_start_date}/><Info label="Probation end" value={employment.probation_end_date}/><Info label="Confirmation date" value={employment.confirmation_date}/><Info label="Confirmation status" value={employment.confirmation_status}/><Info label="Resignation date" value={employment.date_left}/></InfoCard>
+      <InfoCard title="Assignment"><Info label="Branch" value={assignment.branch_name}/><Info label="Department" value={assignment.department_name}/><Info label="Unit" value={assignment.team_name}/><Info label="Position" value={assignment.position_name}/><Info label="Job grade" value={assignment.job_grade_name}/><Info label="Manager ID" value={assignment.manager}/></InfoCard>
     </div>
   </div>;
 }

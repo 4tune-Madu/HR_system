@@ -1,17 +1,19 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {Link, useParams} from 'react-router-dom';
 import {ArrowLeft, Archive, FileText, RotateCcw, Upload} from 'lucide-react';
-import {API_URL} from '../api/client';
-import {archiveDocument, getArchivedDocuments, getEmployee, getEmployeeDocument, listDocuments, restoreDocument, uploadDocument} from '../api/employees';
+import {archiveDocument, downloadEmployeeDocument, getArchivedDocuments, getEmployee, getEmployeeDocument, listDocuments, listEmployees, restoreDocument, uploadDocument} from '../api/employees';
 import {useAuth} from '../context/AuthContext';
 
 const documentTypes = ['EMPLOYMENT_LETTER', 'OFFER_LETTER', 'CONTRACT', 'IDENTIFICATION', 'CERTIFICATE', 'RESUME', 'OTHER'];
 const emptyForm = {document_type: 'OTHER', name: '', description: '', issue_date: '', expiry_date: '', file: null};
 
 export default function Documents() {
-	const {id: employeeId} = useParams();
+	const {id} = useParams();
 	const {user} = useAuth();
+	const employeeId = id || user?.employee_id;
+	const isOwnDocuments = !id;
 	const [employee, setEmployee] = useState(null);
+	const [employees, setEmployees] = useState([]);
 	const [documents, setDocuments] = useState([]);
 	const [view, setView] = useState('ACTIVE');
 	const [form, setForm] = useState(emptyForm);
@@ -20,18 +22,19 @@ export default function Documents() {
 	const [message, setMessage] = useState('');
 	const [busy, setBusy] = useState(false);
 	const formRef = useRef(null);
-	const role = user?.role_code;
-	const isSystemAdmin = user?.is_system_admin;
-	const canUpload = isSystemAdmin || ['ORGANIZATION_ADMIN', 'HR_MANAGER', 'HR_OFFICER'].includes(role);
-	const canArchive = isSystemAdmin || role === 'ORGANIZATION_ADMIN';
-	const canRestore = isSystemAdmin || ['ORGANIZATION_ADMIN', 'HR_MANAGER'].includes(role);
+	const membership = user?.memberships?.find((item) => item.organization_id === import.meta.env.VITE_ORGANIZATION_ID);
+	const permissions = membership?.permissions || [];
+	const has = (permission) => user?.is_system_admin || permissions.includes(permission);
+	const canUpload = has('employee.document.upload');
+	const canArchive = has('employee.document.archive');
+	const canRestore = has('employee.document.restore');
 
 	const loadData = useCallback(async () => {
 		if (!employeeId) return;
 		setError('');
 		try {
 			const [employeeData, documentData] = await Promise.all([
-				getEmployee(employeeId),
+				isOwnDocuments ? Promise.resolve(null) : getEmployee(employeeId),
 				view === 'ACTIVE' ? listDocuments(employeeId) : getArchivedDocuments(employeeId),
 			]);
 			setEmployee(employeeData);
@@ -39,11 +42,32 @@ export default function Documents() {
 		} catch (requestError) {
 			setError(requestError.message);
 		}
-	}, [employeeId, view]);
+	}, [employeeId, isOwnDocuments, view]);
 
 	useEffect(() => { loadData(); }, [loadData]);
 
+	useEffect(() => {
+		if (!employeeId) {
+			listEmployees()
+				.then(data => setEmployees(Array.isArray(data) ? data : data?.results || []))
+				.catch(requestError => setError(requestError.message));
+		}
+	}, [employeeId]);
+
 	const updateForm = (field, value) => setForm(current => ({...current, [field]: value}));
+
+	const download = async record => {
+		setError('');
+		try {
+			const blob = await downloadEmployeeDocument(employeeId, record.id);
+			const url = URL.createObjectURL(blob);
+			const link = document.createElement('a');
+			link.href = url;
+			link.download = decodeURIComponent(record.file.split('/').pop()) || record.name;
+			link.click();
+			setTimeout(() => URL.revokeObjectURL(url), 1000);
+		} catch (requestError) { setError(requestError.message); }
+	};
 
 	const submitUpload = async event => {
 		event.preventDefault();
@@ -122,14 +146,14 @@ export default function Documents() {
 	};
 
 	if (!employeeId) {
-		return <div><div className="page-heading"><div><span className="eyebrow">Records</span><h2>Employee documents</h2><p>Choose an employee record to view and manage its documents.</p></div></div><div className="panel notice"><FileText size={22}/><Link to="/employees">Go to employees</Link></div></div>;
+		return <div><div className="page-heading"><div><span className="eyebrow">Records</span><h2>Employee documents</h2><p>Choose an employee record to view and manage its documents.</p></div></div>{error && <div className="error banner" role="alert">{error}</div>}<section className="panel"><div className="table-wrap"><table><thead><tr><th>Employee</th><th>Employee number</th><th>Department</th><th>Action</th></tr></thead><tbody>{employees.length ? employees.map(item => <tr key={item.id}><td>{[item.identity?.first_name, item.identity?.last_name].filter(Boolean).join(' ') || 'Unnamed employee'}</td><td>{item.employee_number || '—'}</td><td>{item.assignment?.department_name || '—'}</td><td><Link className="link-button" to={`/employees/${item.id}/documents`}>View documents</Link></td></tr>) : <tr><td colSpan="4" className="empty">No employees available.</td></tr>}</tbody></table></div></section><Link className="back" to="/employees"><ArrowLeft size={17}/> Go to employees</Link></div>;
 	}
 
-	const employeeName = [employee?.identity?.first_name, employee?.identity?.last_name].filter(Boolean).join(' ') || 'Employee';
+	const employeeName = [employee?.identity?.first_name, employee?.identity?.last_name].filter(Boolean).join(' ') || [user?.first_name, user?.last_name].filter(Boolean).join(' ') || 'Employee';
 
 	return <div>
-		<Link className="back" to={`/employees/${employeeId}`}><ArrowLeft size={17}/> {employeeName}</Link>
-		<div className="page-heading"><div><span className="eyebrow">Employee records</span><h2>Documents</h2><p>Upload, inspect, archive, and restore documents for {employeeName}.</p></div></div>
+		{!isOwnDocuments && <Link className="back" to={`/employees/${employeeId}`}><ArrowLeft size={17}/> {employeeName}</Link>}
+		<div className="page-heading"><div><span className="eyebrow">{isOwnDocuments ? 'Employee self-service' : 'Employee records'}</span><h2>{isOwnDocuments ? 'My documents' : 'Documents'}</h2><p>{isOwnDocuments ? 'View and download documents shared with you by HR.' : `Upload, inspect, archive, and restore documents for ${employeeName}.`}</p></div></div>
 		{error && <div className="error banner" role="alert">{error}</div>}
 		{message && <div className="success banner" role="status">{message}</div>}
 		{canUpload && <form ref={formRef} className="panel document-upload" onSubmit={submitUpload}>
@@ -156,7 +180,7 @@ export default function Documents() {
 			<tbody>
 				{documents.map(document => <tr key={document.id}>
 					<td>{document.name}<small>{document.description || '—'}</small></td><td>{document.document_type?.replaceAll('_', ' ') || '—'}</td><td>{document.issue_date || '—'}</td><td>{document.expiry_date || '—'}</td>
-					<td><div className="row-actions"><button className="link-button" type="button" onClick={() => showDetails(document)}>Details</button>{document.file && <a className="link-button" href={new URL(document.file, `${API_URL}/`).toString()} target="_blank" rel="noreferrer">Open file</a>}{view === 'ACTIVE' && canArchive && <button className="link-button" type="button" disabled={busy} onClick={() => archive(document)}><Archive size={16}/> Archive</button>}{view === 'ARCHIVED' && canRestore && <button className="link-button" type="button" disabled={busy} onClick={() => restore(document)}><RotateCcw size={16}/> Restore</button>}</div></td>
+					<td><div className="row-actions"><button className="link-button" type="button" onClick={() => showDetails(document)}>Details</button>{document.file && <button className="link-button" type="button" onClick={() => download(document)}>Download file</button>}{view === 'ACTIVE' && canArchive && <button className="link-button" type="button" disabled={busy} onClick={() => archive(document)}><Archive size={16}/> Archive</button>}{view === 'ARCHIVED' && canRestore && <button className="link-button" type="button" disabled={busy} onClick={() => restore(document)}><RotateCcw size={16}/> Restore</button>}</div></td>
 				</tr>)}
 				{!documents.length && <tr><td colSpan="5" className="empty">No {view.toLowerCase()} documents.</td></tr>}
 			</tbody>
