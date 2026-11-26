@@ -319,12 +319,11 @@ class AttendanceRecord(models.Model):
 
     class Status(models.TextChoices):
         PRESENT = "PRESENT", "Present"
+        LATE = "LATE", "Late"
+        OVERLATE = "OVERLATE", "Overlate"
         ABSENT = "ABSENT", "Absent"
-        INCOMPLETE = "INCOMPLETE", "Incomplete"
-        OFF_DAY = "OFF_DAY", "Off Day"
         HOLIDAY = "HOLIDAY", "Holiday"
         ON_LEAVE = "ON_LEAVE", "On Leave"
-        EXCUSED = "EXCUSED", "Excused"
 
     id = models.UUIDField(
         primary_key=True,

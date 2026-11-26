@@ -12,6 +12,17 @@ dist
 dist-ssr
 *.local
 backend/.env
+backend/.env.*
+!backend/.env.example
+!backend/.env.production.example
+
+# Python and local runtime artifacts
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+backend/db.sqlite3
+backend/employee_documents/
 
 # Editor directories and files
 .vscode/*

@@ -25,6 +25,16 @@ React + Vite frontend wired to the Django HR backend.
 
 ## Important backend note
 
-The backend permission layer determines `request.organization` from the `organization_id` URL and the authenticated user's organization membership. The current `/api/auth/me/` response does not expose organization membership, so the frontend currently uses `VITE_ORGANIZATION_ID`.
+The backend permission layer determines `request.organization` from the `organization_id` URL and the authenticated user's organization membership. `/api/auth/me/` exposes active organization memberships, roles, and permissions. The frontend currently selects the organization through `VITE_ORGANIZATION_ID`.
 
-The organization models exist, but REST endpoints for creating/listing branches, departments, teams, positions and job grades are not currently wired into `config/urls.py`. The employee form therefore uses UUID fields for those relationships for now.
+Organization structure endpoints are wired under `/api/organization/`. Leave, attendance, payroll, and onboarding endpoints are also wired into `backend/config/urls.py`. The main development frontend lives in the parent checkout's `frontend/` directory; this checkout also contains a frontend copy.
+
+## Payroll effective dates
+
+Processing excludes compensation, allowances, and deductions whose `effective_from` date falls after the payroll period's end date. Records effective on the end date are included. The current calculation uses full configured amounts and does not prorate mid-period changes.
+
+Run payroll regression tests from `backend/`:
+
+```powershell
+& .\.venv\Scripts\python.exe manage.py test apps.payroll.tests
+```

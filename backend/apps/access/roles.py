@@ -2,6 +2,7 @@ ROLE_PERMISSIONS = {
     "ORGANIZATION_ADMIN": [
         "organization.view",
         "organization.update",
+        "organization.structure.manage",
 
         "employee.view",
         "employee.create",
@@ -40,6 +41,7 @@ ROLE_PERMISSIONS = {
 
     "HR_MANAGER": [
         "organization.view",
+        "organization.structure.manage",
 
         "employee.view",
         "employee.create",
@@ -56,6 +58,7 @@ ROLE_PERMISSIONS = {
         "leave.view",
         "leave.request",
         "leave.approve",
+        "leave.manage",
 
         "attendance.view",
 
@@ -71,6 +74,7 @@ ROLE_PERMISSIONS = {
 
     "HR_OFFICER": [
         "organization.view",
+        "organization.structure.manage",
 
         "employee.view",
         "employee.create",

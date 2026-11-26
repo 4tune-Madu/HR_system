@@ -67,6 +67,8 @@ INSTALLED_APPS = [
     'apps.access',
     'apps.leave',
     'apps.attendance',
+    'apps.payroll',
+    'apps.onboarding',
 
     # Third Party
     'rest_framework',
@@ -184,6 +186,9 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "API documentation for the HR Management System",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
+    "ENUM_NAME_OVERRIDES": {
+        "AccrualFrequencyEnum": ["ANNUAL", "MONTHLY"],
+    },
 }
 
 
@@ -267,18 +272,6 @@ CELERY_BEAT_SCHEDULE = {
             day_of_month=1,
             hour=0,
             minute=30,
-        ),
-    },
-
-    "accrue-leave-monthly": {
-        "task": (
-            "apps.leave.tasks."
-            "accrue_leave_for_current_month"
-        ),
-        "schedule": crontab(
-            day_of_month=1,
-            hour=1,
-            minute=0,
         ),
     },
 

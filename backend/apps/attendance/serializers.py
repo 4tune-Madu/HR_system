@@ -1,11 +1,66 @@
 from rest_framework import serializers
 from drf_spectacular.utils import extend_schema_field
 from .models import (
+    AttendanceDevice,
     AttendanceDeviceEmployee,
     AttendanceRecord,
     AttendanceEvent,
     AttendanceSyncLog,
 )
+
+
+class AttendanceDeviceSerializer(serializers.ModelSerializer):
+    organization_id = serializers.UUIDField(
+        source="organization.id",
+        read_only=True,
+    )
+
+    class Meta:
+        model = AttendanceDevice
+        fields = [
+            "id",
+            "organization_id",
+            "name",
+            "vendor",
+            "model",
+            "serial_number",
+            "mac_address",
+            "connection_type",
+            "ip_address",
+            "port",
+            "is_active",
+            "last_seen_at",
+            "last_sync_at",
+            "configuration",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = [
+            "id",
+            "organization_id",
+            "last_seen_at",
+            "last_sync_at",
+            "created_at",
+            "updated_at",
+        ]
+
+    def validate_name(self, value):
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError("Device name is required.")
+        return value
+
+    def validate(self, attrs):
+        connection_type = attrs.get(
+            "connection_type",
+            getattr(self.instance, "connection_type", None),
+        )
+        if connection_type == AttendanceDevice.ConnectionType.NETWORK:
+            if not attrs.get("ip_address", getattr(self.instance, "ip_address", None)):
+                raise serializers.ValidationError({"ip_address": "Network devices require an IP address."})
+            if not attrs.get("port", getattr(self.instance, "port", None)):
+                raise serializers.ValidationError({"port": "Network devices require a port."})
+        return attrs
 
 
 class AttendanceDeviceUserSerializer(serializers.Serializer):

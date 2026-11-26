@@ -58,6 +58,9 @@ class EmployeeService:
         personal_email="",
         company_email="",
         phone_number="",
+        other_phone_number="",
+        cug_phone_number="",
+        next_of_kin=None,
         address="",
         branch=None,
         department=None,
@@ -110,6 +113,8 @@ class EmployeeService:
             personal_email=personal_email,
             company_email=company_email,
             phone_number=phone_number,
+            other_phone_number=other_phone_number,
+            cug_phone_number=cug_phone_number,
             address=address,
         )
 
@@ -135,7 +140,19 @@ class EmployeeService:
             date_left=date_left,
         )
 
+        EmployeeService.replace_next_of_kin(employee, next_of_kin)
         return employee
+
+    @staticmethod
+    def replace_next_of_kin(employee, contacts):
+        if contacts is None:
+            return
+        if sum(bool(contact.get("is_primary")) for contact in contacts) > 1:
+            raise ValueError("Only one next of kin can be the primary contact.")
+        employee.next_of_kin.all().delete()
+        for contact in contacts:
+            NextOfKin.objects.create(employee=employee, **contact)
+        employee._prefetched_objects_cache = {}
 
     @staticmethod
     def _validate_organization_assignment(
@@ -412,6 +429,7 @@ class EmployeeService:
         contact_data=None,
         assignment_data=None,
         employment_data=None,
+        next_of_kin=None,
     ):
         """
         Update an employee and their related records.
@@ -536,6 +554,7 @@ class EmployeeService:
 
             employment.save()
 
+        EmployeeService.replace_next_of_kin(employee, next_of_kin)
         return employee
 
 

@@ -42,6 +42,8 @@ class EmployeeContactSerializer(serializers.ModelSerializer):
             "personal_email",
             "company_email",
             "phone_number",
+            "other_phone_number",
+            "cug_phone_number",
             "address",
         ]
 
@@ -106,6 +108,12 @@ class EmploymentSerializer(serializers.ModelSerializer):
         ]
 
 class NextOfKinSerializer(serializers.ModelSerializer):
+
+    def validate(self, attrs):
+        for field in ("full_name", "relationship", "phone_number"):
+            if not attrs.get(field, "").strip():
+                raise serializers.ValidationError({field: "This field is required."})
+        return attrs
 
     class Meta:
         model = NextOfKin
@@ -249,6 +257,8 @@ class EmployeeIdentityInputSerializer(serializers.Serializer):
     )
 
 class EmployeeContactInputSerializer(serializers.Serializer):
+    other_phone_number = serializers.CharField(max_length=30, required=False, allow_blank=True)
+    cug_phone_number = serializers.CharField(max_length=30, required=False, allow_blank=True)
     personal_email = serializers.EmailField(
         required=False,
         allow_blank=True,
@@ -289,6 +299,12 @@ class EmployeeAssignmentInputSerializer(serializers.Serializer):
     position = serializers.UUIDField(
         required=False,
         allow_null=True,
+    )
+
+    position_title = serializers.CharField(
+        max_length=200,
+        required=False,
+        allow_blank=True,
     )
 
     job_grade = serializers.UUIDField(
@@ -343,6 +359,7 @@ class EmploymentInputSerializer(serializers.Serializer):
     )
 
 class EmployeeCreateSerializer(serializers.Serializer):
+    next_of_kin = NextOfKinSerializer(many=True, required=False)
 
     identity = EmployeeIdentityInputSerializer()
 
@@ -359,6 +376,7 @@ class EmployeeCreateSerializer(serializers.Serializer):
     )
 
 class EmployeeUpdateSerializer(serializers.Serializer):
+    next_of_kin = NextOfKinSerializer(many=True, required=False)
 
     identity = EmployeeIdentityInputSerializer(
         required=False,

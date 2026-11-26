@@ -15,6 +15,59 @@ from apps.organization.models import (
 )
 
 
+class StarterOptionsTests(APITestCase):
+    def test_seed_preserves_existing_records_and_is_repeatable(self):
+        from io import StringIO
+        from django.core.management import call_command
+        from apps.organization.models import Branch, Department, JobGrade, Position, Team
+        from apps.leave.models import LeaveType
+
+        organization = Organization.objects.create(name="Starter QA", legal_name="Starter QA")
+        other = Organization.objects.create(name="Untouched QA", legal_name="Untouched QA")
+        existing = Branch.objects.create(organization=organization, code="HQ", name="My Existing Office", is_active=False)
+        for _ in range(2):
+            call_command("seed_local_options", organization=str(organization.id), stdout=StringIO())
+        existing.refresh_from_db()
+        self.assertEqual(existing.name, "My Existing Office")
+        self.assertFalse(existing.is_active)
+        self.assertEqual(Branch.objects.filter(organization=organization).count(), 5)
+        self.assertEqual(Department.objects.filter(organization=organization).count(), 11)
+        self.assertEqual(JobGrade.objects.filter(organization=organization).count(), 8)
+        self.assertEqual(Team.objects.filter(department__organization=organization).count(), 13)
+        self.assertEqual(Position.objects.filter(organization=organization).count(), 32)
+        self.assertEqual(LeaveType.objects.filter(organization=organization).count(), 7)
+        self.assertFalse(Branch.objects.filter(organization=other).exists())
+        for position in Position.objects.filter(organization=organization).select_related("department", "job_grade"):
+            self.assertEqual(position.department.organization_id, organization.id)
+            self.assertEqual(position.job_grade.organization_id, organization.id)
+
+
+class OrganizationStructureReadAccessTests(APITestCase):
+    def setUp(self):
+        self.organization = Organization.objects.create(name="Read access QA", legal_name="Read access QA")
+        self.other = Organization.objects.create(name="Other QA", legal_name="Other QA")
+        self.user = User.objects.create_user(email="read-access@example.test", password="TestPassword123!")
+        role = RoleService.provision_system_role(organization=self.organization, role_code="VIEWER")
+        AccessService.assign_role(user=self.user, organization=self.organization, role=role)
+        self.client.force_authenticate(self.user)
+
+    def test_viewer_can_load_all_employee_assignment_choices(self):
+        for resource in ["branches", "departments", "teams", "job-grades", "positions"]:
+            with self.subTest(resource=resource):
+                response = self.client.get(f"/api/organization/{self.organization.id}/{resource}/")
+                self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_viewer_cannot_write_structure_or_read_other_organization(self):
+        from apps.organization.models import Branch
+        branch = Branch.objects.create(organization=self.organization, name="Existing", code="EXISTING")
+        base = f"/api/organization/{self.organization.id}/branches/"
+        self.assertEqual(self.client.post(base, {"name": "Denied", "code": "DENIED"}).status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(self.client.patch(f"{base}{branch.id}/", {"name": "Denied"}).status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(self.client.delete(f"{base}{branch.id}/").status_code, status.HTTP_403_FORBIDDEN)
+        response = self.client.get(f"/api/organization/{self.other.id}/branches/")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+
 class OrganizationAttendanceSettingsAPITests(
     APITestCase
 ):

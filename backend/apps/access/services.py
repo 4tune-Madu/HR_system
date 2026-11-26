@@ -44,6 +44,12 @@ class AccessService:
         permission within an organization.
         """
 
+        # System administrators are platform-wide superusers. They are
+        # intentionally not limited by the organization role permission
+        # matrix, while the caller still supplies the organization scope.
+        if user.is_superuser:
+            return True
+
         membership = AccessService.get_membership(
             user=user,
             organization=organization,

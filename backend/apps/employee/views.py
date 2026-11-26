@@ -2,6 +2,9 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
+from django.http import FileResponse, Http404
+from pathlib import Path
+import uuid
 
 from .models import (
     Employee,
@@ -212,6 +215,21 @@ class EmployeeListView(APIView):
                 organization=request.organization,
             )
 
+        position_title = assignment_data.get("position_title", "").strip()
+        if position_title:
+            position = Position.objects.filter(
+                organization=request.organization,
+                title__iexact=position_title,
+            ).first()
+            if position is None:
+                position = Position.objects.create(
+                    organization=request.organization,
+                    title=position_title,
+                    code=f"EMP-{uuid.uuid4().hex[:12].upper()}",
+                    department=department,
+                    job_grade=job_grade,
+                )
+
         if assignment_data.get("job_grade"):
             job_grade = get_object_or_404(
                 JobGrade,
@@ -270,6 +288,9 @@ class EmployeeListView(APIView):
                     "personal_email",
                     "",
                 ),
+                other_phone_number=contact_data.get("other_phone_number", ""),
+                cug_phone_number=contact_data.get("cug_phone_number", ""),
+                next_of_kin=data.get("next_of_kin"),
 
                 company_email=contact_data.get(
                     "company_email",
@@ -548,6 +569,24 @@ class EmployeeDetailView(APIView):
                     )
                 )
 
+            if "position_title" in assignment_data:
+                position_title = assignment_data.pop("position_title").strip()
+                if position_title:
+                    assignment_data["position"] = Position.objects.filter(
+                        organization=request.organization,
+                        title__iexact=position_title,
+                    ).first()
+                    if assignment_data["position"] is None:
+                        assignment_data["position"] = Position.objects.create(
+                            organization=request.organization,
+                            title=position_title,
+                            code=f"EMP-{uuid.uuid4().hex[:12].upper()}",
+                            department=assignment_data.get("department"),
+                            job_grade=None,
+                        )
+                else:
+                    assignment_data["position"] = None
+
             if assignment_data.get("job_grade"):
 
                 assignment_data["job_grade"] = (
@@ -578,6 +617,7 @@ class EmployeeDetailView(APIView):
                 employee=employee,
                 identity_data=identity_data,
                 contact_data=contact_data,
+                next_of_kin=data.get("next_of_kin"),
                 assignment_data=assignment_data,
                 employment_data=employment_data,
             )
@@ -810,6 +850,24 @@ class EmployeeDocumentListView(APIView):
             response_serializer.data,
             status=status.HTTP_201_CREATED,
         )
+
+class EmployeeDocumentDownloadView(APIView):
+    permission_classes = [CanViewEmployeeDocuments]
+
+    @extend_schema(responses={(200, "application/octet-stream"): bytes}, tags=["Employee Documents"])
+    def get(self, request, organization_id, employee_id, document_id):
+        document = get_object_or_404(
+            EmployeeDocument,
+            id=document_id,
+            employee_id=employee_id,
+            employee__organization=request.organization,
+        )
+        try:
+            file = document.file.open("rb")
+        except (FileNotFoundError, ValueError):
+            raise Http404("Document file is unavailable.")
+        return FileResponse(file, as_attachment=True, filename=Path(document.file.name).name)
+
 
 class EmployeeDocumentDetailView(APIView):
 

@@ -9,6 +9,11 @@ PERMISSIONS = [
         "name": "Update Organization",
         "description": "Allows updating organization information.",
     },
+    {
+        "code": "organization.structure.manage",
+        "name": "Manage Organization Structure",
+        "description": "Allows managing branches, departments, teams, positions, and job grades.",
+    },
 
     {
         "code": "employee.view",
@@ -29,6 +34,21 @@ PERMISSIONS = [
         "code": "employee.deactivate",
         "name": "Deactivate Employees",
         "description": "Allows deactivating employees.",
+    },
+    {
+        "code": "employee.activate",
+        "name": "Activate Employees",
+        "description": "Allows reactivating employees.",
+    },
+    {
+        "code": "employee.account.provision",
+        "name": "Provision Employee Accounts",
+        "description": "Allows provision new employee accounts.",
+    },
+    {
+        "code": "employee.account.invite",
+        "name": "Invite Employee Accounts",
+        "description": "Allows inviting employees to set up accounts.",
     },
     {
         "code": "employee.view_own",
@@ -77,11 +97,31 @@ PERMISSIONS = [
         "name": "Approve Leave",
         "description": "Allows approving leave requests.",
     },
+    {
+        "code": "leave.manage",
+        "name": "Manage Leave",
+        "description": "Allows managing overall leave operations.",
+    },
 
     {
         "code": "attendance.view",
         "name": "View Attendance",
         "description": "Allows viewing attendance records.",
+    },
+    {
+        "code": "attendance.settings.manage",
+        "name": "Manage Attendance Settings",
+        "description": "Allows managing attendance configuration.",
+    },
+    {
+        "code": "attendance.manual.manage",
+        "name": "Manage Manual Attendance",
+        "description": "Allows manual attendance adjustments.",
+    },
+    {
+        "code": "attendance.reconciliation.manage",
+        "name": "Manage Attendance Reconciliation",
+        "description": "Allows managing attendance reconciliation tasks.",
     },
 
     {

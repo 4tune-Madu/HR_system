@@ -124,6 +124,8 @@ class EmployeeIdentity(models.Model):
         return self.full_name
 
 class EmployeeContact(models.Model):
+    other_phone_number = models.CharField(max_length=30, blank=True)
+    cug_phone_number = models.CharField(max_length=30, blank=True)
     id = models.UUIDField(
         primary_key=True,
         default=uuid.uuid4,
@@ -243,14 +245,11 @@ class Employment(models.Model):
     class EmploymentType(models.TextChoices):
         PERMANENT = "PERMANENT", "Permanent"
         CONTRACT = "CONTRACT", "Contract"
-        TEMPORARY = "TEMPORARY", "Temporary"
         INTERN = "INTERN", "Intern"
-        PART_TIME = "PART_TIME", "Part Time"
 
     class EmploymentStatus(models.TextChoices):
         ACTIVE = "ACTIVE", "Active"
         PROBATION = "PROBATION", "Probation"
-        SUSPENDED = "SUSPENDED", "Suspended"
         RESIGNED = "RESIGNED", "Resigned"
         TERMINATED = "TERMINATED", "Terminated"
         RETIRED = "RETIRED", "Retired"
@@ -260,7 +259,6 @@ class Employment(models.Model):
         PENDING = "PENDING", "Pending"
         CONFIRMED = "CONFIRMED", "Confirmed"
         EXTENDED = "EXTENDED", "Extended"
-        FAILED = "FAILED", "Failed"
 
     id = models.UUIDField(
         primary_key=True,

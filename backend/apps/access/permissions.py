@@ -1,6 +1,7 @@
 from rest_framework.permissions import BasePermission
 
 from apps.access.services import AccessService
+from apps.organization.models import Organization
 
 
 class HasOrganizationPermission(BasePermission):
@@ -32,7 +33,19 @@ class HasOrganizationPermission(BasePermission):
         )
 
         if not membership:
-            return False
+            if not request.user.is_superuser:
+                return False
+
+            organization = Organization.objects.filter(
+                id=organization_id,
+                is_active=True,
+            ).first()
+            if not organization:
+                return False
+
+            request.organization = organization
+            request.organization_membership = None
+            return True
 
         request.organization = (
             membership.organization
@@ -57,6 +70,26 @@ class CanViewEmployees(
 ):
 
     required_permission = "employee.view"
+
+    def has_permission(self, request, view):
+        if super().has_permission(request, view):
+            return True
+        if request.method != "GET" or not view.kwargs.get("employee_id") or not getattr(request, "organization", None):
+            return False
+
+        from apps.employee.models import Employee
+
+        is_own_record = Employee.objects.filter(
+            id=view.kwargs["employee_id"],
+            organization=request.organization,
+            user=request.user,
+            is_active=True,
+        ).exists()
+        return is_own_record and AccessService.has_permission(
+            user=request.user,
+            organization=request.organization,
+            permission="employee.view_own",
+        )
 
 
 class CanCreateEmployees(
@@ -178,6 +211,23 @@ class CanViewAttendanceRecords(
 ):
     required_permission = "attendance.view"
 
+    def has_permission(self, request, view):
+        if super().has_permission(request, view):
+            return True
+        if request.method != "GET" or not getattr(request, "organization", None):
+            return False
+        from apps.employee.models import Employee
+        is_employee = Employee.objects.filter(
+            organization=request.organization,
+            user=request.user,
+            is_active=True,
+        ).exists()
+        return is_employee and AccessService.has_permission(
+            user=request.user,
+            organization=request.organization,
+            permission="employee.view_own",
+        )
+
 class CanManageManualAttendance(
     HasOrganizationPermission
 ):
@@ -191,3 +241,13 @@ class CanManageAttendanceReconciliation(
     required_permission = (
         "attendance.reconciliation.manage"
     )
+
+
+class CanViewOrganization(HasOrganizationPermission):
+    required_permission = "organization.view"
+
+
+class CanManageOrganizationStructure(
+    HasOrganizationPermission
+):
+    required_permission = "organization.structure.manage"

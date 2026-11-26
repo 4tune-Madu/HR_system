@@ -14,6 +14,7 @@ from rest_framework.generics import (
     ListAPIView,
     RetrieveAPIView,
 )
+from pyzk2.exception import ZKError
 from rest_framework.exceptions import (
     NotFound,
     ValidationError,
@@ -37,6 +38,7 @@ from apps.access.permissions import (
 )
 from .serializers import (
     AttendanceDeviceUserSerializer,
+    AttendanceDeviceSerializer,
     AttendanceDeviceMappingSerializer,
     AttendanceDeviceMappingCreateSerializer,
     AttendanceDeviceMappingUpdateSerializer,
@@ -52,6 +54,116 @@ from .services import (
     AttendanceSyncService,
     AttendanceRecordService,
 )
+
+
+class AttendanceDeviceListCreateView(APIView):
+    permission_classes = [CanViewAttendanceDevices]
+
+    def get_permissions(self):
+        if self.request.method == "POST":
+            return [CanManageAttendanceDevices()]
+        return [CanViewAttendanceDevices()]
+
+    @extend_schema(
+        operation_id="attendance_device_list",
+        summary="List registered attendance devices",
+        responses={200: AttendanceDeviceSerializer(many=True)},
+        tags=["Attendance Devices"],
+    )
+    def get(self, request, organization_id):
+        devices = AttendanceDevice.objects.filter(
+            organization=request.organization,
+        ).order_by("name")
+        return Response(AttendanceDeviceSerializer(devices, many=True).data)
+
+    @extend_schema(
+        operation_id="attendance_device_register",
+        summary="Register an attendance device",
+        request=AttendanceDeviceSerializer,
+        responses={201: AttendanceDeviceSerializer},
+        tags=["Attendance Devices"],
+    )
+    def post(self, request, organization_id):
+        serializer = AttendanceDeviceSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            device = AttendanceDeviceService.register_device(
+                organization=request.organization,
+                **serializer.validated_data,
+            )
+        except ValueError as exc:
+            raise ValidationError({"detail": str(exc)})
+        return Response(
+            AttendanceDeviceSerializer(device).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class AttendanceDeviceDetailView(APIView):
+    permission_classes = [CanViewAttendanceDevices]
+
+    def get_permissions(self):
+        if self.request.method in {"PATCH", "PUT", "DELETE"}:
+            return [CanManageAttendanceDevices()]
+        return [CanViewAttendanceDevices()]
+
+    def _get_device(self, request, device_id):
+        try:
+            return AttendanceDeviceService.get_device(
+                device_id=device_id,
+                organization=request.organization,
+            )
+        except AttendanceDevice.DoesNotExist:
+            raise NotFound("Attendance device not found.")
+
+    @extend_schema(
+        operation_id="attendance_device_detail",
+        summary="Retrieve an attendance device",
+        responses={200: AttendanceDeviceSerializer},
+        tags=["Attendance Devices"],
+    )
+    def get(self, request, organization_id, device_id):
+        return Response(AttendanceDeviceSerializer(self._get_device(request, device_id)).data)
+
+    @extend_schema(
+        operation_id="attendance_device_update",
+        summary="Update an attendance device",
+        request=AttendanceDeviceSerializer,
+        responses={200: AttendanceDeviceSerializer},
+        tags=["Attendance Devices"],
+    )
+    def patch(self, request, organization_id, device_id):
+        device = self._get_device(request, device_id)
+        serializer = AttendanceDeviceSerializer(
+            device,
+            data=request.data,
+            partial=True,
+        )
+        serializer.is_valid(raise_exception=True)
+        values = {
+            field: serializer.validated_data.get(field, getattr(device, field))
+            for field in (
+                "name", "vendor", "model", "serial_number", "mac_address",
+                "connection_type", "ip_address", "port", "configuration",
+            )
+        }
+        try:
+            if "is_active" in serializer.validated_data:
+                target_active = serializer.validated_data["is_active"]
+                if target_active != device.is_active:
+                    device = (
+                        AttendanceDeviceService.activate_device
+                        if target_active
+                        else AttendanceDeviceService.deactivate_device
+                    )(device=device, organization=request.organization)
+            device = AttendanceDeviceService.update_device(
+                device=device,
+                organization=request.organization,
+                **values,
+            )
+        except ValueError as exc:
+            raise ValidationError({"detail": str(exc)})
+        return Response(AttendanceDeviceSerializer(device).data)
 
 
 class AttendanceDeviceUsersView(
@@ -119,13 +231,17 @@ class AttendanceDeviceUsersView(
                 )
             )
 
-        except ValueError as exc:
+        except (ValueError, ZKError, OSError) as exc:
 
             return Response(
                 {
-                    "detail": str(exc)
+                    "detail": (
+                        "The attendance device could not be reached. "
+                        "Check that it is powered on and reachable at "
+                        f"{device.ip_address}:{device.port}."
+                    )
                 },
-                status=status.HTTP_400_BAD_REQUEST,
+                status=status.HTTP_502_BAD_GATEWAY,
             )
 
         mappings = (
@@ -823,6 +939,9 @@ class AttendanceRecordListView(ListAPIView):
             )
         )
 
+        if getattr(self.request.organization_membership, "role", "") == "EMPLOYEE":
+            records = records.filter(employee__user=self.request.user)
+
         employee_id = self.request.query_params.get(
             "employee_id"
         )
@@ -859,6 +978,9 @@ class AttendanceRecordListView(ListAPIView):
                 status=record_status,
             )
 
+        if getattr(self.request.organization_membership, "role", "") == "EMPLOYEE":
+            records = records.filter(employee__user=self.request.user)
+
         return records.order_by(
             "-attendance_date",
             "employee__employee_number",
@@ -885,6 +1007,41 @@ class AttendanceRecordDetailView(RetrieveAPIView):
             )
         )
 
+
+class AttendanceSyncLogListView(ListAPIView):
+    permission_classes = [CanViewAttendanceDevices]
+    serializer_class = AttendanceSyncLogSerializer
+
+    @extend_schema(
+        tags=["Attendance Devices"],
+        parameters=[
+            OpenApiParameter(name="device_id", type=OpenApiTypes.UUID, location=OpenApiParameter.QUERY, required=False),
+            OpenApiParameter(name="status", type=OpenApiTypes.STR, location=OpenApiParameter.QUERY, required=False, enum=[choice[0] for choice in AttendanceSyncLog.Status.choices]),
+            OpenApiParameter(name="date_from", type=OpenApiTypes.DATE, location=OpenApiParameter.QUERY, required=False),
+            OpenApiParameter(name="date_to", type=OpenApiTypes.DATE, location=OpenApiParameter.QUERY, required=False),
+        ],
+    )
+    def get_queryset(self):
+        logs = (
+            AttendanceSyncLog.objects
+            .filter(organization=self.request.organization)
+            .select_related("device")
+        )
+        device_id = self.request.query_params.get("device_id")
+        sync_status = self.request.query_params.get("status")
+        date_from = self.request.query_params.get("date_from")
+        date_to = self.request.query_params.get("date_to")
+        if device_id:
+            logs = logs.filter(device_id=device_id)
+        if sync_status:
+            logs = logs.filter(status=sync_status)
+        if date_from:
+            logs = logs.filter(started_at__date__gte=date_from)
+        if date_to:
+            logs = logs.filter(started_at__date__lte=date_to)
+        return logs.order_by("-started_at")
+
+
 class AttendanceRecordReconcileView(APIView):
     permission_classes = [
         CanManageAttendanceReconciliation
@@ -892,6 +1049,7 @@ class AttendanceRecordReconcileView(APIView):
 
     @extend_schema(
         tags=["Attendance Records"],
+        request=None,
         responses={
             200: AttendanceRecordSerializer,
         },

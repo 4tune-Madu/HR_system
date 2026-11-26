@@ -1,5 +1,6 @@
 from decimal import Decimal
-from django.test import TestCase
+from django.conf import settings
+from django.test import SimpleTestCase, TestCase
 
 from apps.organization.models import Organization
 from apps.employee.services import EmployeeService
@@ -24,6 +25,19 @@ from apps.leave.services import (
 from apps.leave.tasks import (
     accrue_leave_for_organization,
 )
+
+
+class LeaveScheduleTests(SimpleTestCase):
+    def test_monthly_accrual_is_scheduled_once(self):
+        jobs = [
+            job for job in settings.CELERY_BEAT_SCHEDULE.values()
+            if job["task"] == "apps.leave.tasks.accrue_leave_for_current_month"
+        ]
+        self.assertEqual(len(jobs), 1)
+        schedule = jobs[0]["schedule"]
+        self.assertEqual(schedule.day_of_month, {1})
+        self.assertEqual(schedule.hour, {1})
+        self.assertEqual(schedule.minute, {0})
 
 
 class LeaveAccrualTaskTests(TestCase):

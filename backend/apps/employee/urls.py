@@ -5,6 +5,7 @@ from .views import (
     EmployeeDetailView,
     EmployeeDocumentListView,
     EmployeeDocumentDetailView,
+    EmployeeDocumentDownloadView,
     EmployeeArchivedDocumentListView,
     EmployeeDocumentRestoreView,
     EmployeeAccountProvisionView,
@@ -13,6 +14,11 @@ from .views import (
 )
 
 urlpatterns = [
+    path(
+        "organizations/<uuid:organization_id>/employees/<uuid:employee_id>/documents/<uuid:document_id>/download/",
+        EmployeeDocumentDownloadView.as_view(),
+        name="employee-document-download",
+    ),
 
     path(
         "organizations/<uuid:organization_id>/employees/",

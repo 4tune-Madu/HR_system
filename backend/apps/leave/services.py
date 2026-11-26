@@ -770,6 +770,8 @@ class LeaveBalanceService:
                                 carry_forward_days
                             ),
                             "used_days": Decimal("0"),
+                            "accrual_enabled": policy.accrual_enabled,
+                            "accrual_frequency": policy.accrual_frequency,
                         },
                     )
                 )
@@ -822,6 +824,8 @@ class LeaveRequestService:
         end_date,
         reason="",
     ):
+        if start_date.year != end_date.year:
+            raise ValueError("Please split leave across calendar years into separate requests.")
 
         # -----------------------------------
         # Employee organization validation
@@ -892,6 +896,9 @@ class LeaveRequestService:
         # -----------------------------------
         # Policy minimum
         # -----------------------------------
+
+        if requested_days <= 0:
+            raise ValueError("The selected period has no working days to deduct.")
 
         if (
             requested_days
@@ -1235,6 +1242,20 @@ class LeaveRequestService:
                 "updated_at",
             ]
         )
+
+        from apps.attendance.models import AttendanceRecord
+        current_date = leave_request.start_date
+        while current_date <= leave_request.end_date:
+            record, _ = AttendanceRecord.objects.get_or_create(
+                organization=leave_request.organization,
+                employee=leave_request.employee,
+                attendance_date=current_date,
+                defaults={"status": AttendanceRecord.Status.ON_LEAVE},
+            )
+            if not record.first_check_in_at:
+                record.status = AttendanceRecord.Status.ON_LEAVE
+                record.save(update_fields=["status", "updated_at"])
+            current_date += timedelta(days=1)
 
         return leave_request
 

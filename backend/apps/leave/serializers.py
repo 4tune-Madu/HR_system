@@ -47,6 +47,7 @@ class LeaveApprovalStepSerializer(
 
         read_only_fields = fields
 
+    @extend_schema_field(serializers.CharField())
     def get_approver_employee_name(
         self,
         obj,
@@ -67,6 +68,7 @@ class LeaveApprovalStepSerializer(
             f"{identity.last_name}"
         ).strip()
 
+    @extend_schema_field(serializers.CharField())
     def get_approver_user_name(
         self,
         obj,
@@ -336,7 +338,7 @@ class LeavePolicySerializer(
 
 
 class LeavePolicyWriteSerializer(
-    serializers.Serializer
+      serializers.Serializer
 ):
 
     leave_type = serializers.UUIDField()
@@ -842,6 +844,7 @@ class LeaveBalanceAdjustmentSerializer(
             "created_at",
         ]
 
+    @extend_schema_field(serializers.CharField())
     def get_adjusted_by_name(
         self,
         obj,

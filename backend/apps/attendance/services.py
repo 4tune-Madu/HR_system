@@ -1473,9 +1473,7 @@ class AttendanceRecordService:
             )
 
         else:
-            status_value = (
-                AttendanceRecord.Status.INCOMPLETE
-            )
+            status_value = AttendanceRecord.Status.PRESENT
 
         # ----------------------------------------------------
         # Calculate late arrival and early departure
@@ -1598,6 +1596,31 @@ class AttendanceRecordService:
                                 ).total_seconds()
                                 // 60
                             )
+
+        approved_leave = LeaveRequest.objects.filter(
+            employee=employee,
+            status=LeaveRequest.Status.APPROVED,
+            start_date__lte=attendance_date,
+            end_date__gte=attendance_date,
+        ).exists()
+        public_holiday = PublicHoliday.objects.filter(
+            organization=employee.organization,
+            date=attendance_date,
+            is_active=True,
+        ).exists()
+
+        if approved_leave:
+            status_value = AttendanceRecord.Status.ON_LEAVE
+        elif public_holiday:
+            status_value = AttendanceRecord.Status.HOLIDAY
+        elif not events:
+            status_value = AttendanceRecord.Status.ABSENT
+        elif late_minutes >= 60:
+            status_value = AttendanceRecord.Status.OVERLATE
+        elif late_minutes > 0:
+            status_value = AttendanceRecord.Status.LATE
+        else:
+            status_value = AttendanceRecord.Status.PRESENT
 
         # ----------------------------------------------------
         # Save attendance record

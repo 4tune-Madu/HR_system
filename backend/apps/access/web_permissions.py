@@ -2,6 +2,7 @@ from django.contrib.auth.mixins import AccessMixin
 from django.core.exceptions import PermissionDenied
 
 from .services import AccessService
+from apps.organization.models import Organization
 
 
 class OrganizationPermissionRequiredMixin(
@@ -35,7 +36,23 @@ class OrganizationPermissionRequiredMixin(
         )
 
         if not membership:
-            raise PermissionDenied
+            if not request.user.is_superuser:
+                raise PermissionDenied
+
+            organization = Organization.objects.filter(
+                id=organization_id,
+                is_active=True,
+            ).first()
+            if not organization:
+                raise PermissionDenied
+
+            request.organization = organization
+            request.organization_membership = None
+            return super().dispatch(
+                request,
+                *args,
+                **kwargs,
+            )
 
         if not self.required_permission:
             raise PermissionDenied

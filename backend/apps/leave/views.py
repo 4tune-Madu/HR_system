@@ -5,6 +5,7 @@ from drf_spectacular.utils import (
 )
 
 from rest_framework import status
+from rest_framework import serializers
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -59,6 +60,7 @@ from .serializers import (
     LeaveApprovalStepSerializer,
 )
 from .services import (
+    LeaveBalanceService,
     LeaveRequestService,
     LeaveTypeService,
     LeavePolicyService,
@@ -1849,6 +1851,7 @@ class LeaveApprovalRuleActivateView(APIView):
     @extend_schema(
         operation_id="leave_approval_rule_activate",
         summary="Activate leave approval rule",
+        request=None,
         responses=LeaveApprovalRuleSerializer,
         tags=["Leave Approval"],
     )
@@ -1906,6 +1909,7 @@ class LeaveApprovalRuleDeactivateView(APIView):
     @extend_schema(
         operation_id="leave_approval_rule_deactivate",
         summary="Deactivate leave approval rule",
+        request=None,
         responses=LeaveApprovalRuleSerializer,
         tags=["Leave Approval"],
     )
@@ -1959,6 +1963,18 @@ class LeaveBalanceListView(APIView):
     permission_classes = [
         CanViewLeave,
     ]
+
+    def get_permissions(self):
+        return [CanManageLeave() if self.request.method == "POST" else CanViewLeave()]
+
+    def post(self, request, organization_id):
+        year_field = serializers.IntegerField(min_value=1900, max_value=9999)
+        year = year_field.run_validation(request.data.get("year"))
+        try:
+            balances = LeaveBalanceService.initialize_year(organization=request.organization, year=year)
+        except ValueError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"created": len(balances), "year": year}, status=status.HTTP_201_CREATED)
 
     @extend_schema(
         operation_id="leave_balance_list",
@@ -2397,6 +2413,7 @@ class WorkScheduleActivateView(APIView):
     @extend_schema(
         operation_id="work_schedule_activate",
         summary="Activate work schedule",
+        request=None,
         responses=WorkScheduleSerializer,
         tags=["Leave Calendar"],
     )
@@ -2452,6 +2469,7 @@ class WorkScheduleDeactivateView(APIView):
     @extend_schema(
         operation_id="work_schedule_deactivate",
         summary="Deactivate work schedule",
+        request=None,
         responses=WorkScheduleSerializer,
         tags=["Leave Calendar"],
     )
@@ -2507,6 +2525,7 @@ class WorkScheduleSetDefaultView(APIView):
     @extend_schema(
         operation_id="work_schedule_set_default",
         summary="Set default work schedule",
+        request=None,
         responses=WorkScheduleSerializer,
         tags=["Leave Calendar"],
     )
@@ -2803,6 +2822,7 @@ class PublicHolidayActivateView(APIView):
     @extend_schema(
         operation_id="public_holiday_activate",
         summary="Activate public holiday",
+        request=None,
         description=(
             "Activate a public holiday for the specified "
             "organization. An active holiday is excluded "
@@ -2877,6 +2897,7 @@ class PublicHolidayDeactivateView(APIView):
     @extend_schema(
         operation_id="public_holiday_deactivate",
         summary="Deactivate public holiday",
+        request=None,
         description=(
             "Deactivate a public holiday for the specified "
             "organization. A deactivated holiday is no longer "
@@ -3305,6 +3326,7 @@ class EmployeeWorkScheduleActivateView(APIView):
     @extend_schema(
         operation_id="employee_work_schedule_activate",
         summary="Activate employee work schedule",
+        request=None,
         responses={
             200: EmployeeWorkScheduleSerializer,
             400: OpenApiResponse(
@@ -3377,6 +3399,7 @@ class EmployeeWorkScheduleDeactivateView(APIView):
     @extend_schema(
         operation_id="employee_work_schedule_deactivate",
         summary="Deactivate employee work schedule",
+        request=None,
         responses={
             200: EmployeeWorkScheduleSerializer,
             400: OpenApiResponse(

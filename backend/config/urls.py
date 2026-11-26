@@ -49,6 +49,16 @@ urlpatterns = [
         include("apps.organization.urls"),
     ),
 
+    path(
+        "api/payroll/",
+        include("apps.payroll.urls"),
+    ),
+
+    path(
+        "api/onboarding/",
+        include("apps.onboarding.urls"),
+    ),
+
     # API documentation
 
     path(

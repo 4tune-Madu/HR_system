@@ -1,11 +1,14 @@
 from django.urls import path
 
 from .views import (
+    AttendanceDeviceListCreateView,
+    AttendanceDeviceDetailView,
     AttendanceDeviceMappingDetailView,
     AttendanceDeviceMappingListCreateView,
     AttendanceDeviceUsersView,
     AttendanceRecordListView,
     AttendanceRecordDetailView,
+    AttendanceSyncLogListView,
     AttendanceEventListView,
     AttendanceEventDetailView,
     ManualAttendanceCheckInView,
@@ -15,6 +18,12 @@ from .views import (
 
 
 urlpatterns = [
+    path(
+        "organizations/<uuid:organization_id>/attendance/devices/",
+        AttendanceDeviceListCreateView.as_view(),
+        name="attendance-devices",
+    ),
+
     path(
         "organizations/<uuid:organization_id>/attendance/devices/<uuid:device_id>/users/",
         AttendanceDeviceUsersView.as_view(),
@@ -70,8 +79,20 @@ urlpatterns = [
     ),
 
     path(
+        "organizations/<uuid:organization_id>/attendance/devices/<uuid:device_id>/",
+        AttendanceDeviceDetailView.as_view(),
+        name="attendance-device-detail",
+    ),
+
+    path(
         "organizations/<uuid:organization_id>/attendance/records/<uuid:record_id>/reconcile/",
         AttendanceRecordReconcileView.as_view(),
         name="attendance-record-reconcile",
+    ),
+
+    path(
+        "organizations/<uuid:organization_id>/attendance/sync-logs/",
+        AttendanceSyncLogListView.as_view(),
+        name="attendance-sync-logs",
     ),
 ]
